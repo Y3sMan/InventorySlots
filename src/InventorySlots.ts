@@ -170,7 +170,7 @@ let itemCategoryVolumes = {
 '    RABInv_ItemType_Lockpick ' : 0.5,
 '    RABInv_ItemType_MiscLarge ' : 5,
 '    RABInv_ItemType_MiscMedium ' : 3,
-'    RABInv_ItemType_MiscSmall ' : 1,
+'    RABInv_ItemType_MiscSmall ' : 0.1,
 '    RABInv_ItemType_Gold ' : 0.0,
 '    RABInv_ItemType_OreIngot ' : 2,
 '    RABInv_ItemType_HidePelt ' : 1
@@ -230,6 +230,7 @@ function determineItemCategory(item: number){
 		const k = kyds[i];
 		const f: number = Form.from(k)!.getFormID()
         if (Object.keys(keywordToCategory).includes(`${f}`)) {
+            // @ts-ignore
             key = keywordToCategory[f];
 
             printConsole(`determineItemCategory:: the key is ${key}`)
@@ -355,7 +356,7 @@ class Slot {
         return this.currentSize
     }
     getFilledProportion(){
-        return `${this.name}:   ${this.currentSize} / ${this.baseSize}`
+        return `${this.name}:   ${this.currentSize.toFixed(2)} / ${this.baseSize}`
     }
     static updateWidgets(){
         BaseSlots.forEach(s => {
@@ -442,17 +443,17 @@ function solveIncomingItemInfo(item: number): [number, Slot] {
     return [determineItemVolume(item), determineItemsSlot(item)]
 }
 
-function addItemtoSlot(item: number){
+function addItemtoSlot(item: number, num: number = 1){
     let tuple = solveIncomingItemInfo(item)
-    const vol: number = tuple[0]
+    const vol: number = tuple[0] * num
     const slot: Slot = tuple[1]
     slot.currentSize += vol
     Slot.updateWidgets()
 }
 
-function removeItemfromSlot(item: number){
+function removeItemfromSlot(item: number, num: number = 1){
     let tuple = solveIncomingItemInfo(item)
-    const vol: number = tuple[0]
+    const vol: number = tuple[0] * num
     const slot: Slot = tuple[1]
     slot.currentSize -= vol
     Slot.updateWidgets()
@@ -465,17 +466,17 @@ function removeItemfromSlot(item: number){
 //     // addItemtoSlot(recieved)
 // }
 
-function slotLookatItem(item: number) {
+function slotLookatItem(item: number, num: number = 1) {
    
     let tuple = solveIncomingItemInfo(item)
-    const vol: number = tuple[0]
+    const vol: number = +( tuple[0] ).toFixed(2) * num
     const slot: Slot = tuple[1]
     let slotMax: number = slot.baseSize
     let slotCurrent: number = slot.currentSize
     Slot.updateWidgets()
     inventoryCurrentHighlighted.setAlpha(1)
     inventoryCurrentHighlighted.setText(`Volume: ${vol}\nSlot: ${slot.name}`)
-    slot.widget.setText(`${slotCurrent} (+${vol}) /${slotMax}`)
+    slot.widget.setText(`${slot.name}:  ${slotCurrent} (+${vol}) /${slotMax}`)
     slot.widget.setColor([0,1,0,1])
 }
 
@@ -485,7 +486,7 @@ const GetItemHighlighted = async () => {
     // printConsole(recieved.getName())
 	if (!recieved) {return;}
     let tuple = solveIncomingItemInfo(recieved.getFormID())
-    const vol: number = tuple[0]
+    const vol: number = +( tuple[0] ).toFixed(2)
     const slot: Slot = tuple[1]
     let slotMax: number = slot.baseSize
     let slotCurrent: number = slot.currentSize
@@ -557,7 +558,7 @@ on('menuOpen', (event) => {
 once('update', () => {
     const allItems: Form[] = AddAllItemsToArray(pl(), false, false, true)
     allItems.forEach(f => {
-        addItemtoSlot(f.getFormID())
+        addItemtoSlot(f.getFormID(), pl()?.getItemCount(f))
     });
 });
 
@@ -565,6 +566,7 @@ let ignoreFlag: boolean = false;
 on('containerChanged', (event) => {
 	let action: string = 'Picked Up'
 	var newId: number = -1
+	var oldId: number = -1
 	const itemId: number = event.baseObj.getFormID()
 	const num: number = event.numItems
     const info: [number, Slot] = solveIncomingItemInfo(event.baseObj.getFormID())
@@ -576,8 +578,8 @@ on('containerChanged', (event) => {
 		// Added to the player's inventory
 		newId = event.newContainer.getFormID()
 
-		// if the player's inventory is involved
         if (!ignoreFlag){ 
+		// if the player's inventory is involved
             if (newId == 20) {
                 // if slot is filled
                 if (slot.currentSize + volume > slot.baseSize) {
@@ -597,15 +599,15 @@ on('containerChanged', (event) => {
                 // else just let the transaction occur
                 else {
                     printConsole('slot unfilled')
-                    addItemtoSlot(itemId)
+                    addItemtoSlot(itemId, num)
                 }
             }
             // Removal from the player's inventory
-            else if (newId != 20 && event.newContainer) {
+            else if (newId != 20 && event.oldContainer.getFormID() == 20) {
                 printConsole('newID != 20')
                 action = 'Removed' 
                 // DropItem(itemId, num, event.oldContainer)
-                removeItemfromSlot(itemId)
+                removeItemfromSlot(itemId, num)
             }
         }
         else {ignoreFlag = false}
@@ -614,18 +616,7 @@ on('containerChanged', (event) => {
 		// the new container will be undefined if the item is just dropped
 		if (error == TypeError || !event.newContainer) {
 			// action = 'Dropped'
-			// removeItemfromSlot(itemId)
-				// picking up from the world
-				if (!event.oldContainer) { 
-                    printConsole('error:: !oldContainer')
-					// DropItem(itemId, num, event.oldContainer)
-					// DenySelection(itemId, event.oldContainer)
-				}
-				// trading with another container
-				else {
-                    printConsole('error:: oldContainer')
-					// DenySelection(itemId, event.oldContainer)
-				}
+			removeItemfromSlot(itemId, num)
 		}
 	}
 	finally {
