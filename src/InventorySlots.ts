@@ -344,11 +344,13 @@ class Slot {
     baseSize: number
     currentSize: number
     widget: wt.spText
+    items: number[]
     constructor(name: string, maxSize: number, x: number, y: number) {
         this.name = name
         this.baseSize = maxSize            
         this.currentSize = 0
         this.widget = new wt.spText(x,y, this.name, white, undefined, 'InventorySlots')
+        this.items = []
         BaseSlots.push(this)
     }
 
@@ -360,6 +362,8 @@ class Slot {
     }
     static updateWidgets(){
         BaseSlots.forEach(s => {
+            if (s.currentSize <= 0) {s.currentSize = 0}
+            s.widget.setAlpha(1)
             s.widget.setColor(white)
             s.widget.setText(s.getFilledProportion())
         });
