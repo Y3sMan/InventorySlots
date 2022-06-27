@@ -1,4 +1,4 @@
-import { once, on, Form, Keyword, Game, Utility, printConsole, MiscObject, ObjectReference, browser, destroyAllTexts, hooks, Debug } from  'skyrimPlatform';
+import { once, on, Form, Keyword, Game, Utility, printConsole, MiscObject, ObjectReference, browser, destroyAllTexts, hooks, Debug, Actor, FormType, Potion, EventHandle, unsubscribe } from  'skyrimPlatform';
 import * as su from '@skyrim-platform/papyrus-util/StorageUtil'
 import {ModEvent} from './modevent'
 import * as wt from '../../modules/SPTextUtils/spTextUtils'
@@ -7,17 +7,11 @@ import {AddAllItemsToArray} from '@skyrim-platform/po3-papyrus-extender/PO3_SKSE
 
 //__________________________ Variable Setup______________________________________________
 browser.setVisible(true)
-let x: number = 2000
+let x: number = 2500
 let y: number = 1000
 const white: number[] = [1,1,1,1]
 destroyAllTexts()
 const inventoryCurrentHighlighted: wt.spText = new wt.spText(1500,y, 'currentItem', [1,1,1,0], undefined, 'InventorySlots')
-// let Misc_widget = new wt.spText(x,y + 20,'baseSlot', white, undefined, 'InventorySlots')
-// let weaponSheaths_widget = new wt.spText(x,y + 40,'weaponSheaths', white, undefined, 'InventorySlots')
-// let Ammo_widget = new wt.spText(x,y + 60,'Ammo', white, undefined, 'InventorySlots')
-// let FragileBottles_widget = new wt.spText(x,y + 80,'Bottles', white, undefined, 'InventorySlots')
-
-
 // ____________________FUNCTIONS___________________________________________
 export function pl() { return Game.getPlayer(); }
 
@@ -164,7 +158,7 @@ let itemCategoryVolumes = {
 '    RABInv_ItemType_Food ' : 1,
 '    RABInv_ItemType_Potion ' : 1,
 '    RABInv_ItemType_Drink ' : 2,
-'    RABInv_ItemType_Ingredient ' : 1,
+'    RABInv_ItemType_Ingredient ' : 0.1,
 '    RABInv_ItemType_Gem ' : 1,
 '    RABInv_ItemType_Soulgem ' : 1,
 '    RABInv_ItemType_Lockpick ' : 0.5,
@@ -217,12 +211,14 @@ let keywordToCategory = {
 604069 : ItemCategories.RABInv_ItemType_BookScroll,
 604066 : ItemCategories.RABInv_ItemType_BookScroll,
 604068 : ItemCategories.RABInv_ItemType_Weapon1H,
-595182 : ItemCategories.RABInv_ItemType_Weapon1H,
+595182 : ItemCategories.RABInv_ItemType_MiscSmall,
 }
 
 function determineItemCategory(item: number){
-    const f: Form = Game.getForm(item)
+    const f: Form = Game.getFormEx(item)
     const isEquipped: boolean = pl()?.isEquipped(f)
+    if (!f){return;}
+    // printConsole(`isEquipped:: ${pl()?.isEquipped(f)}`)
 	const kyds: Keyword[] = f.getKeywords()
     let key: number = -1
     if (item == 15){return ItemCategories.RABInv_ItemType_Gold} // gold doesn't have a keyword and needs to be treated different
@@ -232,108 +228,21 @@ function determineItemCategory(item: number){
         if (Object.keys(keywordToCategory).includes(`${f}`)) {
             // @ts-ignore
             key = keywordToCategory[f];
+            if (isEquipped){key += 1; if (key > 27){key = 0}}
 
-            printConsole(`determineItemCategory:: the key is ${key}`)
-            printConsole(`determineItemCategory:: the keyword id is ${f}`)
+            // printConsole(`determineItemCategory:: the key is ${key}`)
+            // printConsole(`determineItemCategory:: the keyword id is ${f}`)
 
             return key
         }
         else {continue}
-        // let key = Object.keys(keywordToCategory).find(f)
-        // if (isEquipped){key += 1}
-        //  Weapons
-        // if (f == weapKwdIds.WeapTypeBattleaxe || f == weapKwdIds.WeapTypeGreatsword || f == weapKwdIds.WeapTypeWarhammer) { 
-        //     if (isEquipped) {return ItemCategories.RABInv_ItemType_Weapon2H_Equipped}
-        //     else {return ItemCategories.RABInv_ItemType_Weapon2H}
-        // }
-        // else if (f == weapKwdIds.WeapTypeMace || f == weapKwdIds.WeapTypeSword || f == weapKwdIds.WeapTypeWarAxe || f == weapKwdIds.WeapTypeDagger || f == weapKwdIds.WeapTypeStaff) { 
-        //     if (isEquipped) {return ItemCategories.RABInv_ItemType_Weapon1H_Equipped}
-        //     else {return ItemCategories.RABInv_ItemType_Weapon1H}
-        // }
-        // else if (f == weapKwdIds.WeapTypeBow) { 
-        //     if (isEquipped) {return ItemCategories.RABInv_ItemType_WeaponBow_Equipped}
-        //     else {return ItemCategories.RABInv_ItemType_WeaponBow}
-        // }
-        // else if (f == miscKwdIds.VendorItemArrow) { 
-        //     if (isEquipped) {return ItemCategories.RABInv_ItemType_WeaponArrow_Equipped}
-        //     else {return ItemCategories.RABInv_ItemType_WeaponArrow}
-        // }
-        // // Armor
-        // else if (f == armorKwdIds.ArmorBoots) { 
-        //     if (isEquipped) {return ItemCategories.RABInv_ItemType_ArmorBoots_Equipped}
-        //     else {return ItemCategories.RABInv_ItemType_ArmorBoots}
-        // }
-        // else if (f == armorKwdIds.ArmorClothing) { 
-        //     if (isEquipped) {return ItemCategories.RABInv_ItemType_Clothes_Equipped}
-        //     else {return ItemCategories.RABInv_ItemType_Clothes}
-        // }
-        // else if (f == armorKwdIds.ArmorCuirass) { 
-        //     if (isEquipped) {return ItemCategories.RABInv_ItemType_ArmorCuirass_Equipped}
-        //     else {return ItemCategories.RABInv_ItemType_ArmorCuirass}
-        // }
-        // else if (f == armorKwdIds.ArmorGauntlets) { 
-        //     if (isEquipped) {return ItemCategories.RABInv_ItemType_ArmorGauntlets_Equipped}
-        //     else {return ItemCategories.RABInv_ItemType_ArmorGauntlets}
-        // }
-        // else if (f == armorKwdIds.ArmorHelmet) { 
-        //     if (isEquipped) {return ItemCategories.RABInv_ItemType_ArmorHelmet_Equipped}
-        //     else {return ItemCategories.RABInv_ItemType_ArmorHelmet}
-        // }
-        // else if (f == armorKwdIds.ArmorJewelry) { 
-        //     if (isEquipped) {return ItemCategories.RABInv_ItemType_Jewelry_Equipped}
-        //     else {return ItemCategories.RABInv_ItemType_Jewelry}
-        // }
-        // else if (f == armorKwdIds.ArmorShield) { 
-        //     if (isEquipped) {return ItemCategories.RABInv_ItemType_ArmorShield_Equipped}
-        //     else {return ItemCategories.RABInv_ItemType_ArmorShield}
-        // }
-        // // Misc
-        // else if (f == miscKwdIds.VendorItemAnimalHide) { 
-        //     return ItemCategories.RABInv_ItemType_HidePelt
-        // }
-        // else if (f == miscKwdIds.VendorItemAnimalPart) { 
-        //     return ItemCategories.RABInv_ItemType_Food
-        // }
-        // else if (f == miscKwdIds.VendorItemBook) { 
-        //     return ItemCategories.RABInv_ItemType_BookScroll
-        // }
-        // else if (f == miscKwdIds.VendorItemClutter) { 
-        //     return ItemCategories.RABInv_ItemType_MiscSmall
-        // }
-        // else if (f == miscKwdIds.VendorItemFireword) { 
-        //     return ItemCategories.RABInv_ItemType_MiscMedium
-        // }
-        // else if (f == miscKwdIds.VendorItemFood || f == miscKwdIds.VendorItemFoodRaw) { 
-        //     return ItemCategories.RABInv_ItemType_Food
-        // }
-        // else if (f == miscKwdIds.VendorItemGem) { 
-        //     return ItemCategories.RABInv_ItemType_Gem
-        // }
-        // else if (f == miscKwdIds.VendorItemIngredient) { 
-        //     return ItemCategories.RABInv_ItemType_Ingredient
-        // }
-        // else if (f == miscKwdIds.VendorItemOreIngot) { 
-        //     return ItemCategories.RABInv_ItemType_OreIngot
-        // }
-        // else if (f == miscKwdIds.VendorItemPoison || f == miscKwdIds.VendorItemPotion) { 
-        //     return ItemCategories.RABInv_ItemType_Potion
-        // }
-        // else if (f == miscKwdIds.VendorItemRecipe) { 
-        //     return ItemCategories.RABInv_ItemType_BookScroll
-        // }
-        // else if (f == miscKwdIds.VendorItemScroll || f == miscKwdIds.VendorItemBook || f == miscKwdIds.VendorItemSpellTome) { 
-        //     return ItemCategories.RABInv_ItemType_BookScroll
-        // }
-        // else if (f == miscKwdIds.VendorItemTool) { 
-        //     return ItemCategories.RABInv_ItemType_MiscMedium
-        // }
 	}
     if (key == -1){return 0;}
 }
 function determineItemVolume(item: number): number{
     const category: number = determineItemCategory(item)
     const vol: number = Object.values(itemCategoryVolumes)[category]
-    printConsole(`determineItemVolume:: the vol is ${vol}`)
+    // printConsole(`determineItemVolume:: the vol is ${vol}`)
     if (!vol){return 0}
     return vol
 }
@@ -385,6 +294,7 @@ let WeaponSheaths_slot = new Slot('Weapons',20, x, y + 20)
 let Ammo_slot = new Slot('Quiver',60, x, y + 40)
 let Valuables_slot = new Slot('Valuables',50, x, y + 60)
 let Bottles_slot = new Slot('Bottles',10, x, y + 80)
+let Equipped_slot = new Slot('Equipped Load',50, x, y + 100)
 
 function determineItemsSlot(item: number): Slot{
     const category: number = determineItemCategory(item)
@@ -400,31 +310,31 @@ var categoryToSlot ={
 'RABInv_ItemType_WeaponBolt' : Ammo_slot,
 'RABInv_ItemType_WeaponBolt_Equipped' : Ammo_slot,
 'RABInv_ItemType_Weapon1H' : WeaponSheaths_slot,
-'RABInv_ItemType_Weapon1H_Equipped' : WeaponSheaths_slot,
+'RABInv_ItemType_Weapon1H_Equipped' : Equipped_slot,
 'RABInv_ItemType_Weapon2H' : WeaponSheaths_slot,
-'RABInv_ItemType_Weapon2H_Equipped' : WeaponSheaths_slot,
+'RABInv_ItemType_Weapon2H_Equipped' : Equipped_slot,
 'RABInv_ItemType_WeaponDagger' : WeaponSheaths_slot,
-'RABInv_ItemType_WeaponDagger_Equipped' : WeaponSheaths_slot,
+'RABInv_ItemType_WeaponDagger_Equipped' : Equipped_slot,
 'RABInv_ItemType_WeaponCrossBow' : WeaponSheaths_slot,
-'RABInv_ItemType_WeaponCrossBow_Equipped' : WeaponSheaths_slot,
+'RABInv_ItemType_WeaponCrossBow_Equipped' : Equipped_slot,
 'RABInv_ItemType_WeaponBow' : WeaponSheaths_slot,
-'RABInv_ItemType_WeaponBow_Equipped' : WeaponSheaths_slot,
+'RABInv_ItemType_WeaponBow_Equipped' : Equipped_slot,
 
 // armors
 'RABInv_ItemType_ArmorShield' : Misc_slot,
-'RABInv_ItemType_ArmorShield_Equipped' : Misc_slot,
+'RABInv_ItemType_ArmorShield_Equipped' : Equipped_slot,
 'RABInv_ItemType_ArmorCuirass' : Misc_slot,
-'RABInv_ItemType_ArmorCuirass_Equipped' : Misc_slot,
+'RABInv_ItemType_ArmorCuirass_Equipped' : Equipped_slot,
 'RABInv_ItemType_ArmorBoots' : Misc_slot,
-'RABInv_ItemType_ArmorBoots_Equipped' : Misc_slot,
+'RABInv_ItemType_ArmorBoots_Equipped' : Equipped_slot,
 'RABInv_ItemType_ArmorHelmet' : Misc_slot,
-'RABInv_ItemType_ArmorHelmet_Equipped' : Misc_slot,
+'RABInv_ItemType_ArmorHelmet_Equipped' : Equipped_slot,
 'RABInv_ItemType_ArmorGauntlets' : Misc_slot,
-'RABInv_ItemType_ArmorGauntlets_Equipped' : Misc_slot,
+'RABInv_ItemType_ArmorGauntlets_Equipped' : Equipped_slot,
 'RABInv_ItemType_Clothes' : Misc_slot,
-'RABInv_ItemType_Clothes_Equipped' : Misc_slot,
+'RABInv_ItemType_Clothes_Equipped' : Equipped_slot,
 'RABInv_ItemType_Jewelry' : Valuables_slot,
-'RABInv_ItemType_Jewelry_Equipped' : Valuables_slot,
+'RABInv_ItemType_Jewelry_Equipped' : Equipped_slot,
 
 // misc
 'RABInv_ItemType_BookScroll' : Misc_slot,
@@ -447,21 +357,60 @@ function solveIncomingItemInfo(item: number): [number, Slot] {
     return [determineItemVolume(item), determineItemsSlot(item)]
 }
 
-function addItemtoSlot(item: number, num: number = 1){
+function addItemtoSlot(item: number, num: number = 1, newSlot: Slot = undefined){
+    let slot: Slot
     let tuple = solveIncomingItemInfo(item)
     const vol: number = tuple[0] * num
-    const slot: Slot = tuple[1]
+    if (!newSlot){
+        slot = tuple[1]
+    }
+    else {
+        slot = newSlot
+    }
+    slot.items.push(item)
+    // printConsole(slot.items)
     slot.currentSize += vol
     Slot.updateWidgets()
 }
 
-function removeItemfromSlot(item: number, num: number = 1){
+function removeItemfromSlot(item: number, num: number = 1, oldSlot: Slot = undefined){
+    let slot: Slot
     let tuple = solveIncomingItemInfo(item)
     const vol: number = tuple[0] * num
-    const slot: Slot = tuple[1]
-    slot.currentSize -= vol
+    let stopFlag: boolean = false
+    // if (!oldSlot){
+    //     slot = tuple[1]
+    // }
+    // else {
+        BaseSlots.forEach(s => {
+           if (s.items.includes(item)) {
+                slot = s; 
+                // printConsole(slot.name); 
+                stopFlag = false; 
+                const i: number = slot.items.indexOf(item)
+                slot.items.splice(i,1)
+            }
+           else {stopFlag = true}
+        });
+        // if (stopFlag){return}
+        // else {slot.currentSize -= vol}
+        // oldSlot.currentSize -= vol
+        slot.currentSize -= vol
+    // }
     Slot.updateWidgets()
 }
+
+function swapBetweenSlots(oldSlot: Slot, newSlot: Slot, option: string, item: number, num: number) {
+    if (option == 'unequip'){ 
+        removeItemfromSlot(item, num);
+        const oldCat: number = determineItemCategory(item);
+        const newCat: number = oldCat - 1
+        const vol: number = Object.values(itemCategoryVolumes)[newCat]
+    }
+    removeItemfromSlot(item, num, Equipped_slot)
+    addItemtoSlot(item, num)
+}
+
 
 // const GetItemSelected = async () => {
 // 	await Utility.wait(0.01);
@@ -476,7 +425,7 @@ function slotLookatItem(item: number, num: number = 1) {
     const vol: number = +( tuple[0] ).toFixed(2) * num
     const slot: Slot = tuple[1]
     let slotMax: number = slot.baseSize
-    let slotCurrent: number = slot.currentSize
+    let slotCurrent: number = +( slot.currentSize ).toFixed(2)
     Slot.updateWidgets()
     inventoryCurrentHighlighted.setAlpha(1)
     inventoryCurrentHighlighted.setText(`Volume: ${vol}\nSlot: ${slot.name}`)
@@ -484,16 +433,18 @@ function slotLookatItem(item: number, num: number = 1) {
     slot.widget.setColor([0,1,0,1])
 }
 
-const GetItemHighlighted = async () => {
+const GetItemHighlighted = async (item: number) => {
 	await Utility.wait(0.001);
-	const recieved: Form = su.GetFormValue(null, "YM.RAB.Highlight.")
+    inventoryCurrentHighlighted.setAlpha(1); 
+	// const recieved: Form = su.GetFormValue(null, "YM.RAB.Highlight.")
     // printConsole(recieved.getName())
-	if (!recieved) {return;}
-    let tuple = solveIncomingItemInfo(recieved.getFormID())
+	// if (!recieved) {return;}
+    let tuple = solveIncomingItemInfo(item)
     const vol: number = +( tuple[0] ).toFixed(2)
     const slot: Slot = tuple[1]
+    if (!vol || !slot){return;}
     let slotMax: number = slot.baseSize
-    let slotCurrent: number = slot.currentSize
+    let slotCurrent: number = +( slot.currentSize ).toFixed(2)
 
     Slot.updateWidgets()
     const isInventory: boolean = Ui.isMenuOpen('InventoryMenu')
@@ -501,14 +452,28 @@ const GetItemHighlighted = async () => {
 
     inventoryCurrentHighlighted.setText(`Volume: ${vol}\nSlot: ${slot.name}`)
 
-    if (isInventory){
-        // slot.widget.setText(`${slotCurrent} (+${vol}) /${slotMax}`)
-        inventoryCurrentHighlighted.setText(`Volume: ${vol}\nSlot: ${slot.name}`)
-    }
-    else if (isContainer) {
-        slot.widget.setText(`${slot.name}:  ${slotCurrent} (+${vol}) /${slotMax}`)
+    // if (isInventory){
+    //     // slot.widget.setText(`${slotCurrent} (+${vol}) /${slotMax}`)
+    //     inventoryCurrentHighlighted.setText(`Volume: ${vol}\nSlot: ${slot.name}`)
+    // }
+    // else if (isContainer) {
         slot.widget.setColor([0,1,0,1])
-    }
+        if (isViewingContainer()){
+            // slot.widget.setColor([1,0.1,.1,1])
+            // slot.widget.setText(`${slot.name}:  ${slotCurrent} (+${vol}) /${slotMax}`)
+            if (isInventory){
+                slot.widget.setText(`${slot.name}:  ${slotCurrent + vol} (${slotCurrent + vol}) /${slotMax}`)
+            }
+            else if (isContainer){
+                slot.widget.setText(`${slot.name}:  ${slotCurrent + vol} (${slotCurrent + vol}) /${slotMax}`)
+            }
+        }
+        else if (!isViewingContainer()){
+            if (slotCurrent + vol > slotMax){slot.widget.setColor([1,0,0,1])}
+            slot.widget.setText(`${slot.name}:  ${slotCurrent} (-${vol}) /${slotMax}`)
+        }
+    // }
+	Ui.invokeBool("HUD Menu", "_global.skyui.components.list.ListLayout.Refresh", true)
 	// printConsole(`${recieved.getName()} has been highlighted`)
 }
 
@@ -526,38 +491,88 @@ const waitRemoveItem = async (item: number, container: number) => {
 	Ui.invokeBool("HUD Menu", "_global.skyui.components.list.ListLayout.Refresh", true)
 }
 
-function DenySelection(itemId: number, oldContainer: ObjectReference) {
-	pl()?.removeItem(Game.getFormEx(itemId), 1, false, oldContainer) 
+function DenySelection(itemId: number, oldContainer: ObjectReference, slotName: string = 'Its slot') {
+	pl()?.removeItem(Game.getFormEx(itemId), 1, true, oldContainer) 
 	Ui.invokeBool("HUD Menu", "_global.skyui.components.list.ListLayout.Refresh", true)
-    Debug.notification('You can not pick this item up. Its slot is full')
+    Debug.notification(`You can not pick this item up. ${slotName} is full`)
 }
 
 const waitFadeOut = async () => {
-    await Utility.wait(2.0);
+    await Utility.wait(1.5);
     if (isFadein){return;}
     Slot.fadeAllOut(); 
     inventoryCurrentHighlighted.setAlpha(0)
+}
+
+function isViewingContainer() {
+    return Ui.getInt("ContainerMenu", "_root.Menu_mc.inventoryLists.categoryList.activeSegment") ? false:true
 }
 
 //____________________________________EVENTS______________________________________________
 
 const eventBlacklist: string[] = [ 'YM_OnSelect_selectPress', 'YM_OnHighlight_selectHighlight' ]
 on('modEvent', (event) => {
-    // printConsole(event.eventName)
 	if (!eventBlacklist.includes(event.eventName)){return;}
 	// if (event.eventName == 'YM_OnSelect_selectPress' && !Ui.isMenuOpen('InventoryMenu')) {	GetItemSelected()}
-	if (event.eventName.includes( 'selectHighlight' )) { GetItemHighlighted()}
+	// if (event.eventName.includes( 'selectHighlight' )) { GetItemHighlighted()}
+    // printConsole(Game.getFormEx( Ui.getInt("InventoryMenu", "_root.Menu_mc.inventoryLists.itemList.selectedEntry.formId") )?.getName())
 	
+	// Ui.invokeBool("HUD Menu", "_global.onItemHighlightChange", true)
+    // let path: string = '_global.'
+    // let endPath: string = 'containerMenu.isViewingContainer'
+    // printConsole(Ui.getInt('ContainerMenu', `${path + endPath}`) )
+    // printConsole(Ui.getInt('ContainerMenu', `${path}BaseInstance.${endPath}`) )
+    // printConsole(Ui.getInt('ContainerMenu', `_root.HUDMovieBaseInstance.isViewingContainer`) )
+    // printConsole(Ui.invokeBool('HUD Menu', `_global.skyui.components.list.ListLayout.Refresh`, true) )
+	// Ui.invokeBool("ContainerMenu", "_global.ItemMenus.InventoryLists.showPanel", true)
+
+	// Ui.invokeFloat("HUD Menu", "_root.HUDMovieBaseInstance.SetExhaustionPenaltyMeter", )
 
 });
 
+let handle
 on('menuOpen', (event) => {
-    if (event.name == 'InventoryMenu' || 'ContainerMenu'){inventoryCurrentHighlighted.setAlpha(1); Slot.updateWidgets()}
+    let lastitemName: number = -2
+    if (event.name == 'InventoryMenu'){
+        inventoryCurrentHighlighted.setAlpha(1); 
+        Slot.updateWidgets()
+        // on('mouseMove', () => {
+        //     printConsole(Game.getFormEx( Ui.getInt("InventoryMenu", "_root.Menu_mc.inventoryLists.itemList.selectedEntry.formId") )?.getName())
+        // });
+        handle = on('update', () => {
+
+            const item: number = Ui.getInt("InventoryMenu", "_root.Menu_mc.inventoryLists.itemList.selectedEntry.formId") 
+            if (!item){return;}
+            if (item != lastitemName) { 
+                printConsole(Game.getFormEx( Ui.getInt("InventoryMenu", "_root.Menu_mc.inventoryLists.itemList.selectedEntry.formId") )?.getName())
+                GetItemHighlighted(item)
+                lastitemName = item 
+            }
+
+        });
+    }
+    else if ( event.name == 'ContainerMenu'){
+        // printConsole(Game.getFormEx(Ui.getInt("ContainerMenu", "_root.Menu_mc.inventoryLists.itemList.selectedEntry.formId"))?.getName())
+        inventoryCurrentHighlighted.setAlpha(1); 
+        Slot.updateWidgets()
+        handle = on('update', () => {
+
+            const item: number = Ui.getInt("ContainerMenu", "_root.Menu_mc.inventoryLists.itemList.selectedEntry.formId") 
+            if (!item){return;}
+            if (item != lastitemName) { 
+                printConsole(isViewingContainer())
+                // printConsole(Game.getFormEx( Ui.getInt("ContainerMenu", "_root.Menu_mc.inventoryLists.itemList.selectedEntry.formId") )?.getName())
+                GetItemHighlighted(item)
+                lastitemName = item 
+            }
+
+        });
+    }
 });
 
-// on('menuClose', (event) => {
-//     if (event.name == 'InventoryMenu' || 'ContainerMenu'){inventoryCurrentHighlighted.setAlpha(0); Slot.fadeAllOut()}
-// });
+on('menuClose', (event) => {
+    if (event.name == 'InventoryMenu' || event.name == 'ContainerMenu'){inventoryCurrentHighlighted.setAlpha(0); Slot.fadeAllOut(); unsubscribe(handle)}
+});
 
 once('update', () => {
     const allItems: Form[] = AddAllItemsToArray(pl(), false, false, true)
@@ -576,71 +591,66 @@ on('containerChanged', (event) => {
     const info: [number, Slot] = solveIncomingItemInfo(event.baseObj.getFormID())
     const volume: number = info[0]
     const slot: Slot = info[1]
-	try {
-		// 20 is the player's inv
-		// the new container being '20' means the incoming item went into the player's inv
-		// Added to the player's inventory
-		newId = event.newContainer.getFormID()
-
-        if (!ignoreFlag){ 
-		// if the player's inventory is involved
-            if (newId == 20) {
-                // if slot is filled
-                if (slot.currentSize + volume > slot.baseSize) {
-                    // picking up from the world
-                    if (!event.oldContainer) { 
-                        DropItem(itemId, num, event.oldContainer)
-                        printConsole('!event.oldContainer')
-                        ignoreFlag = true
-                    }
-                    // trading with another container
-                    else {
-                        DenySelection(itemId, event.oldContainer)
-                        ignoreFlag = true
-                        printConsole('event.oldContainer')
-                    }
-                }
-                // else just let the transaction occur
-                else {
-                    printConsole('slot unfilled')
-                    addItemtoSlot(itemId, num)
-                }
+    if (event.oldContainer) {oldId = event.oldContainer.getFormID()}
+    if (event.newContainer) {newId = event.newContainer.getFormID()}
+    // if (ignoreFlag){ignoreFlag = false; return;}
+    // Item added to player's inventory
+    if (newId == 20 && !ignoreFlag){
+        // the slot is filled
+        if (slot.currentSize + volume > slot.baseSize) {
+            // if the item was picked up from the world
+            if (!event.oldContainer){
+                DropItem(itemId, num, event.oldContainer)
+                // printConsole('!event.oldContainer')
             }
-            // Removal from the player's inventory
-            else if (newId != 20 && event.oldContainer.getFormID() == 20) {
-                printConsole('newID != 20')
-                action = 'Removed' 
-                // DropItem(itemId, num, event.oldContainer)
-                removeItemfromSlot(itemId, num)
+            // if the item was taken from a container
+            else {
+                DenySelection(itemId, event.oldContainer, slot.name)
+                // printConsole('event.oldContainer')
             }
+            ignoreFlag = true 
         }
-        else {ignoreFlag = false}
-	} catch (error) {
-		printConsole(error)
-		// the new container will be undefined if the item is just dropped
-		if (error == TypeError || !event.newContainer) {
-			// action = 'Dropped'
-			removeItemfromSlot(itemId, num)
-		}
-	}
-	finally {
-		if (slot.currentSize <= 0) {slot.currentSize = 0}
-		// printConsole(`${action} Item ${event.baseObj.getName()}`)
-		// printConsole(`The current slot is filled ${slotFilled} out of ${slotMax}`)
-		// Debug.notification(`The current slot is filled ${slotFilled} out of ${slotMax}`)
-	}
-	// BaseSlotWidget.setText(`${slotFilled}/${slotMax}`)	
-	// LargeSlotWidget.setText(`${slot2Filled}/${slotMax}`)	
+        else{
+            addItemtoSlot(itemId, num)
+        }
+    }
+    // Item removed from player's inventory
+    else if (oldId == 20 && !ignoreFlag) {
+        removeItemfromSlot(itemId, num)
+    }
+    else {ignoreFlag = false}
+    if (slot.currentSize <= 0) {slot.currentSize = 0}
 });
 
 let isFadein: boolean = false
 on('crosshairRefChanged', (event) => {
     const id: number = event.reference?.getBaseObject()?.getFormID()
-    if (event.reference?.getBaseObject()?.isPlayable()){
+    const typeBlacklist: number[] = [FormType.Character, FormType.Activator, FormType.Door, FormType.Apparatus, FormType.Container, FormType.NPC]
+    if (event.reference?.getBaseObject()?.isPlayable() && !typeBlacklist.includes(event.reference?.getBaseObject()?.getType())){
             isFadein = true
             Slot.fadeAllIn()
             slotLookatItem(id)
-
     }
     else {isFadein = false; waitFadeOut()}
+});
+
+on('equip', (event) => {
+    if (event.actor.getBaseObject()?.getFormID() != pl()?.getBaseObject()?.getFormID()){return;}
+    // printConsole(event.baseObj.getName())
+    if (Ui.isMenuOpen('MagicMenu')) {return;}
+    const item: number = event.baseObj.getFormID()
+    // printConsole(`equip:: isEquipped:: ${pl()?.isEquipped(event.baseObj)}`)
+    const oldCat: Slot = determineItemCategory(item)
+    removeItemfromSlot(item, 1)
+    addItemtoSlot(item, 1)
+});
+
+on('unequip', (event) => {
+    if (event.actor.getBaseObject()?.getFormID() != pl()?.getBaseObject()?.getFormID()){return;}
+    // printConsole(event.baseObj.getName())
+    if (Ui.isMenuOpen('MagicMenu')) {return;}
+    const item: number = event.baseObj.getFormID()
+    // printConsole(`unequip:: isEquipped:: ${pl()?.isEquipped(event.baseObj)}`)
+    removeItemfromSlot(item, 1)
+    addItemtoSlot(item, 1)
 });
