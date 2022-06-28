@@ -4,6 +4,7 @@ import {ModEvent} from './modevent'
 import * as wt from '../../modules/SPTextUtils/spTextUtils'
 import { Ui } from '@skyrim-platform/skyrim-platform';
 import {AddAllItemsToArray} from '@skyrim-platform/po3-papyrus-extender/PO3_SKSEFunctions'
+import { mainMcm } from "./Slots_Mcm";
 
 //__________________________ Variable Setup______________________________________________
 browser.setVisible(true)
@@ -75,7 +76,8 @@ enum miscKwdIds {
 	VendorItemWeapon = 588120
 }
 
-const enum ItemCategories{  
+export enum ItemCategories{  
+
 // weapons
 RABInv_ItemType_WeaponArrow,
 RABInv_ItemType_WeaponArrow_Equipped,
@@ -91,6 +93,7 @@ RABInv_ItemType_WeaponCrossBow,
 RABInv_ItemType_WeaponCrossBow_Equipped,
 RABInv_ItemType_WeaponBow,
 RABInv_ItemType_WeaponBow_Equipped,
+
 // armors
 RABInv_ItemType_ArmorShield,
 RABInv_ItemType_ArmorShield_Equipped,
@@ -106,6 +109,8 @@ RABInv_ItemType_Clothes,
 RABInv_ItemType_Clothes_Equipped,
 RABInv_ItemType_Jewelry,
 RABInv_ItemType_Jewelry_Equipped,
+
+// misc
 RABInv_ItemType_BookScroll,
 RABInv_ItemType_Food,
 RABInv_ItemType_Potion,
@@ -120,6 +125,7 @@ RABInv_ItemType_MiscSmall,
 RABInv_ItemType_Gold,
 RABInv_ItemType_OreIngot,
 RABInv_ItemType_HidePelt
+
 }
 
 let itemCategoryVolumes = { 
@@ -239,6 +245,7 @@ function determineItemCategory(item: number){
 	}
     if (key == -1){return 0;}
 }
+
 function determineItemVolume(item: number): number{
     const category: number = determineItemCategory(item)
     const vol: number = Object.values(itemCategoryVolumes)[category]
@@ -247,8 +254,8 @@ function determineItemVolume(item: number): number{
     return vol
 }
 
-let BaseSlots: Slot[] = []
-class Slot {
+export let BaseSlots: Slot[] = []
+export class Slot {
     name: string
     baseSize: number
     currentSize: number
@@ -294,7 +301,7 @@ let WeaponSheaths_slot = new Slot('Weapons',20, x, y + 20)
 let Ammo_slot = new Slot('Quiver',60, x, y + 40)
 let Valuables_slot = new Slot('Valuables',50, x, y + 60)
 let Bottles_slot = new Slot('Bottles',10, x, y + 80)
-let Equipped_slot = new Slot('Equipped Load',50, x, y + 100)
+// let Equipped_slot = new Slot('Equipped Load',50, x, y + 100)
 
 function determineItemsSlot(item: number): Slot{
     const category: number = determineItemCategory(item)
@@ -310,31 +317,31 @@ var categoryToSlot ={
 'RABInv_ItemType_WeaponBolt' : Ammo_slot,
 'RABInv_ItemType_WeaponBolt_Equipped' : Ammo_slot,
 'RABInv_ItemType_Weapon1H' : WeaponSheaths_slot,
-'RABInv_ItemType_Weapon1H_Equipped' : Equipped_slot,
+'RABInv_ItemType_Weapon1H_Equipped' : Misc_slot,
 'RABInv_ItemType_Weapon2H' : WeaponSheaths_slot,
-'RABInv_ItemType_Weapon2H_Equipped' : Equipped_slot,
+'RABInv_ItemType_Weapon2H_Equipped' : Misc_slot,
 'RABInv_ItemType_WeaponDagger' : WeaponSheaths_slot,
-'RABInv_ItemType_WeaponDagger_Equipped' : Equipped_slot,
+'RABInv_ItemType_WeaponDagger_Equipped' : Misc_slot,
 'RABInv_ItemType_WeaponCrossBow' : WeaponSheaths_slot,
-'RABInv_ItemType_WeaponCrossBow_Equipped' : Equipped_slot,
+'RABInv_ItemType_WeaponCrossBow_Equipped' : Misc_slot,
 'RABInv_ItemType_WeaponBow' : WeaponSheaths_slot,
-'RABInv_ItemType_WeaponBow_Equipped' : Equipped_slot,
+'RABInv_ItemType_WeaponBow_Equipped' : Misc_slot,
 
 // armors
 'RABInv_ItemType_ArmorShield' : Misc_slot,
-'RABInv_ItemType_ArmorShield_Equipped' : Equipped_slot,
+'RABInv_ItemType_ArmorShield_Equipped' : Misc_slot,
 'RABInv_ItemType_ArmorCuirass' : Misc_slot,
-'RABInv_ItemType_ArmorCuirass_Equipped' : Equipped_slot,
+'RABInv_ItemType_ArmorCuirass_Equipped' : Misc_slot,
 'RABInv_ItemType_ArmorBoots' : Misc_slot,
-'RABInv_ItemType_ArmorBoots_Equipped' : Equipped_slot,
+'RABInv_ItemType_ArmorBoots_Equipped' : Misc_slot,
 'RABInv_ItemType_ArmorHelmet' : Misc_slot,
-'RABInv_ItemType_ArmorHelmet_Equipped' : Equipped_slot,
+'RABInv_ItemType_ArmorHelmet_Equipped' : Misc_slot,
 'RABInv_ItemType_ArmorGauntlets' : Misc_slot,
-'RABInv_ItemType_ArmorGauntlets_Equipped' : Equipped_slot,
+'RABInv_ItemType_ArmorGauntlets_Equipped' : Misc_slot,
 'RABInv_ItemType_Clothes' : Misc_slot,
-'RABInv_ItemType_Clothes_Equipped' : Equipped_slot,
+'RABInv_ItemType_Clothes_Equipped' : Misc_slot,
 'RABInv_ItemType_Jewelry' : Valuables_slot,
-'RABInv_ItemType_Jewelry_Equipped' : Equipped_slot,
+'RABInv_ItemType_Jewelry_Equipped' : Misc_slot,
 
 // misc
 'RABInv_ItemType_BookScroll' : Misc_slot,
@@ -508,9 +515,45 @@ function isViewingContainer() {
     return Ui.getInt("ContainerMenu", "_root.Menu_mc.inventoryLists.categoryList.activeSegment") ? false:true
 }
 
+function saveSettings(){
+    let values: number[] = Object.values(itemCategoryVolumes)
+    let keys: string[] = Object.keys(itemCategoryVolumes)
+
+    // Saving Item Category Volumes
+    once('update', () => {
+        values.forEach(val => {
+            let i: number = values.indexOf(val)
+            su.SetFloatValue(null, `YM.Slots.${keys[i]}`, val)    
+        });
+    });
+
+    // Save Slot information
+    once('update', () => {
+        BaseSlots.forEach(s => {
+            let name: string = s.name
+            su.StringListAdd(null, `YM.Slots.Slots`, name)
+            su.SetIntValue(null, `YM.Slots.${s.name}.fSlotMax:Slots`, s.baseSize)
+        });
+    });
+}
+
+function importSettings(){
+    once('update', () => {
+        let slots: string[] = su.StringListToArray(null, 'YM.Slots.Slots')
+        slots.forEach(s => {
+            new Slot(s, su.GetIntValue(null, `YM.Slots.${s}.fSlotMax:Slots`), x, y - 20)
+        });
+
+    });
+}
+
 //____________________________________EVENTS______________________________________________
 
+// mcm script
+mainMcm()
+
 const eventBlacklist: string[] = [ 'YM_OnSelect_selectPress', 'YM_OnHighlight_selectHighlight' ]
+
 on('modEvent', (event) => {
 	if (!eventBlacklist.includes(event.eventName)){return;}
 	// if (event.eventName == 'YM_OnSelect_selectPress' && !Ui.isMenuOpen('InventoryMenu')) {	GetItemSelected()}
@@ -575,10 +618,22 @@ on('menuClose', (event) => {
 });
 
 once('update', () => {
+
+    // importSettings()
+    let s: string[] = [ 'Equipped_Load', 'Test2' ]
+    let i: number = 20
+    s.forEach(name => {
+        let slot: Slot = new Slot(name, su.GetIntValue(null, `YM.Slots.${name}.fSlotMax:Slots`, 50), x, y - i)
+        categoryToSlot.RABInv_ItemType_Potion = slot
+
+        i += 20
+    });
+
     const allItems: Form[] = AddAllItemsToArray(pl(), false, false, true)
     allItems.forEach(f => {
         addItemtoSlot(f.getFormID(), pl()?.getItemCount(f))
     });
+
 });
 
 let ignoreFlag: boolean = false;
