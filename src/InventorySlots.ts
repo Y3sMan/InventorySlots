@@ -1,10 +1,20 @@
-import { once, on, Form, Keyword, Game, Utility, printConsole, MiscObject, ObjectReference, browser, destroyAllTexts, hooks, Debug, Actor, FormType, Potion, EventHandle, unsubscribe } from  'skyrimPlatform';
+import { once, on, Form, Keyword, Game, Utility, printConsole, MiscObject, ObjectReference, browser, destroyAllTexts, hooks, Debug, Actor, FormType, Potion, EventHandle, unsubscribe, settings, SlotType } from  'skyrimPlatform';
 import * as su from '@skyrim-platform/papyrus-util/StorageUtil'
+import { WriteToFile, ReadFromFile, FileExists } from "@skyrim-platform/papyrus-util/MiscUtil";
+import * as ju from '@skyrim-platform/papyrus-util/JsonUtil'
 import {ModEvent} from './modevent'
 import * as wt from '../../modules/SPTextUtils/spTextUtils'
 import { Ui } from '@skyrim-platform/skyrim-platform';
 import {AddAllItemsToArray} from '@skyrim-platform/po3-papyrus-extender/PO3_SKSEFunctions'
 import { mainMcm } from "./Slots_Mcm";
+
+
+once('update', () => {
+    const checkScriptNumbers = function (name: string) {
+            if (FileExists(`data/platform/plugins/${name}`) && FileExists(`data/platform/pluginsdev/${name}`)){printConsole('ABORT TESTING. THERE ARE TWO INSTANCES OF THIS SCRIPT')}
+    }
+    checkScriptNumbers('InventorySlots.js')
+});
 
 //__________________________ Variable Setup______________________________________________
 browser.setVisible(true)
@@ -128,52 +138,52 @@ RABInv_ItemType_HidePelt
 
 }
 
-let itemCategoryVolumes = { 
+export let itemCategoryVolumes = { 
     // weapons
-'    RABInv_ItemType_WeaponArrow ' : 1,
-'    RABInv_ItemType_WeaponArrow_Equipped ' : 1,
-'    RABInv_ItemType_WeaponBolt ' : 0.5,
-'    RABInv_ItemType_WeaponBolt_Equipped ' : 0.5,
-'    RABInv_ItemType_Weapon1H ' : 5,
-'    RABInv_ItemType_Weapon1H_Equipped ' : 5,
-'    RABInv_ItemType_Weapon2H ' : 10,
-'    RABInv_ItemType_Weapon2H_Equipped ' : 10,
-'    RABInv_ItemType_WeaponDagger ' : 2,
-'    RABInv_ItemType_WeaponDagger_Equipped ' : 2,
-'    RABInv_ItemType_WeaponCrossBow ' : 8,
-'    RABInv_ItemType_WeaponCrossBow_Equipped ' : 8,
-'    RABInv_ItemType_WeaponBow ' : 8,
-'    RABInv_ItemType_WeaponBow_Equipped ' : 8,
-    // armors
-'    RABInv_ItemType_ArmorShield ' : 9,
-'    RABInv_ItemType_ArmorShield_Equipped ' : 9,
-'    RABInv_ItemType_ArmorCuirass ' : 15,
-'    RABInv_ItemType_ArmorCuirass_Equipped ' : 15,
-'    RABInv_ItemType_ArmorBoots ' : 6,
-'    RABInv_ItemType_ArmorBoots_Equipped ' : 6,
-'    RABInv_ItemType_ArmorHelmet ' : 6,
-'    RABInv_ItemType_ArmorHelmet_Equipped ' : 6,
-'    RABInv_ItemType_ArmorGauntlets ' :4,
-'    RABInv_ItemType_ArmorGauntlets_Equipped ' : 4,
-'    RABInv_ItemType_Clothes ' : 6,
-'    RABInv_ItemType_Clothes_Equipped ' : 6,
-'    RABInv_ItemType_Jewelry ' : 3,
-'    RABInv_ItemType_Jewelry_Equipped ' : 3,
-    // misc
-'    RABInv_ItemType_BookScroll ' : 2,
-'    RABInv_ItemType_Food ' : 1,
-'    RABInv_ItemType_Potion ' : 1,
-'    RABInv_ItemType_Drink ' : 2,
-'    RABInv_ItemType_Ingredient ' : 0.1,
-'    RABInv_ItemType_Gem ' : 1,
-'    RABInv_ItemType_Soulgem ' : 1,
-'    RABInv_ItemType_Lockpick ' : 0.5,
-'    RABInv_ItemType_MiscLarge ' : 5,
-'    RABInv_ItemType_MiscMedium ' : 3,
-'    RABInv_ItemType_MiscSmall ' : 0.1,
-'    RABInv_ItemType_Gold ' : 0.0,
-'    RABInv_ItemType_OreIngot ' : 2,
-'    RABInv_ItemType_HidePelt ' : 1
+'RABInv_ItemType_WeaponArrow':1,
+'RABInv_ItemType_WeaponArrow_Equipped':1,
+'RABInv_ItemType_WeaponBolt':0.5,
+'RABInv_ItemType_WeaponBolt_Equipped':0.5,
+'RABInv_ItemType_Weapon1H':5,
+'RABInv_ItemType_Weapon1H_Equipped':5,
+'RABInv_ItemType_Weapon2H':10,
+'RABInv_ItemType_Weapon2H_Equipped':10,
+'RABInv_ItemType_WeaponDagger':2,
+'RABInv_ItemType_WeaponDagger_Equipped':2,
+'RABInv_ItemType_WeaponCrossBow':8,
+'RABInv_ItemType_WeaponCrossBow_Equipped':8,
+'RABInv_ItemType_WeaponBow':8,
+'RABInv_ItemType_WeaponBow_Equipped':8,
+//armors
+'RABInv_ItemType_ArmorShield':9,
+'RABInv_ItemType_ArmorShield_Equipped':9,
+'RABInv_ItemType_ArmorCuirass':15,
+'RABInv_ItemType_ArmorCuirass_Equipped':15,
+'RABInv_ItemType_ArmorBoots':6,
+'RABInv_ItemType_ArmorBoots_Equipped':6,
+'RABInv_ItemType_ArmorHelmet':6,
+'RABInv_ItemType_ArmorHelmet_Equipped':6,
+'RABInv_ItemType_ArmorGauntlets':4,
+'RABInv_ItemType_ArmorGauntlets_Equipped':4,
+'RABInv_ItemType_Clothes':6,
+'RABInv_ItemType_Clothes_Equipped':6,
+'RABInv_ItemType_Jewelry':3,
+'RABInv_ItemType_Jewelry_Equipped':3,
+//misc
+'RABInv_ItemType_BookScroll':2,
+'RABInv_ItemType_Food':1,
+'RABInv_ItemType_Potion':1,
+'RABInv_ItemType_Drink':2,
+'RABInv_ItemType_Ingredient':0.1,
+'RABInv_ItemType_Gem':1,
+'RABInv_ItemType_Soulgem':1,
+'RABInv_ItemType_Lockpick':0.5,
+'RABInv_ItemType_MiscLarge':5,
+'RABInv_ItemType_MiscMedium':3,
+'RABInv_ItemType_MiscSmall':0.1,
+'RABInv_ItemType_Gold':0.0,
+'RABInv_ItemType_OreIngot':2,
+'RABInv_ItemType_HidePelt':1
 }
 
 let keywordToCategory = {
@@ -254,7 +264,7 @@ function determineItemVolume(item: number): number{
     return vol
 }
 
-export let BaseSlots: Slot[] = []
+let BaseSlots: Slot[] = []
 export class Slot {
     name: string
     baseSize: number
@@ -271,10 +281,10 @@ export class Slot {
     }
 
     getFilled(){
-        return this.currentSize
+        return this.currentSize.toFixed(2)
     }
     getFilledProportion(){
-        return `${this.name}:   ${this.currentSize.toFixed(2)} / ${this.baseSize}`
+        return `${this.name}:   ${this.currentSize.toFixed(2)} / ${this.baseSize.toFixed(2)}`
     }
     static updateWidgets(){
         BaseSlots.forEach(s => {
@@ -294,6 +304,23 @@ export class Slot {
             s.widget.setAlpha(1)
         });
     }
+    static getAllSlotNames(){
+        let names: string[] = []
+        BaseSlots.forEach(s => {
+            names.push(s.name)
+        });
+        return names
+    }
+    static getAllSlots(){
+        return BaseSlots
+    }
+    // static getSlotsDict(){
+    //     var names_slots = {}
+    //     BaseSlots.forEach(s => {
+    //         let name: string = s.name
+    //         names_slots[name] = s
+    //     });
+    // }
 }
 
 let Misc_slot = new Slot('Misc',200, x, y)
@@ -310,38 +337,38 @@ function determineItemsSlot(item: number): Slot{
     return Object.values(categoryToSlot)[category]
 }
 
-var categoryToSlot ={
+export var categoryToSlot ={
 // weapons
 'RABInv_ItemType_WeaponArrow' : Ammo_slot,
 'RABInv_ItemType_WeaponArrow_Equipped' : Ammo_slot,
 'RABInv_ItemType_WeaponBolt' : Ammo_slot,
 'RABInv_ItemType_WeaponBolt_Equipped' : Ammo_slot,
 'RABInv_ItemType_Weapon1H' : WeaponSheaths_slot,
-'RABInv_ItemType_Weapon1H_Equipped' : Misc_slot,
+'RABInv_ItemType_Weapon1H_Equipped' : WeaponSheaths_slot,
 'RABInv_ItemType_Weapon2H' : WeaponSheaths_slot,
-'RABInv_ItemType_Weapon2H_Equipped' : Misc_slot,
+'RABInv_ItemType_Weapon2H_Equipped' : WeaponSheaths_slot,
 'RABInv_ItemType_WeaponDagger' : WeaponSheaths_slot,
-'RABInv_ItemType_WeaponDagger_Equipped' : Misc_slot,
+'RABInv_ItemType_WeaponDagger_Equipped' : WeaponSheaths_slot,
 'RABInv_ItemType_WeaponCrossBow' : WeaponSheaths_slot,
-'RABInv_ItemType_WeaponCrossBow_Equipped' : Misc_slot,
+'RABInv_ItemType_WeaponCrossBow_Equipped' : WeaponSheaths_slot,
 'RABInv_ItemType_WeaponBow' : WeaponSheaths_slot,
-'RABInv_ItemType_WeaponBow_Equipped' : Misc_slot,
+'RABInv_ItemType_WeaponBow_Equipped' : WeaponSheaths_slot,
 
 // armors
 'RABInv_ItemType_ArmorShield' : Misc_slot,
-'RABInv_ItemType_ArmorShield_Equipped' : Misc_slot,
+'RABInv_ItemType_ArmorShield_Equipped' : WeaponSheaths_slot,
 'RABInv_ItemType_ArmorCuirass' : Misc_slot,
-'RABInv_ItemType_ArmorCuirass_Equipped' : Misc_slot,
+'RABInv_ItemType_ArmorCuirass_Equipped' : WeaponSheaths_slot,
 'RABInv_ItemType_ArmorBoots' : Misc_slot,
-'RABInv_ItemType_ArmorBoots_Equipped' : Misc_slot,
+'RABInv_ItemType_ArmorBoots_Equipped' : WeaponSheaths_slot,
 'RABInv_ItemType_ArmorHelmet' : Misc_slot,
-'RABInv_ItemType_ArmorHelmet_Equipped' : Misc_slot,
+'RABInv_ItemType_ArmorHelmet_Equipped' : WeaponSheaths_slot,
 'RABInv_ItemType_ArmorGauntlets' : Misc_slot,
-'RABInv_ItemType_ArmorGauntlets_Equipped' : Misc_slot,
+'RABInv_ItemType_ArmorGauntlets_Equipped' : WeaponSheaths_slot,
 'RABInv_ItemType_Clothes' : Misc_slot,
-'RABInv_ItemType_Clothes_Equipped' : Misc_slot,
+'RABInv_ItemType_Clothes_Equipped' : WeaponSheaths_slot,
 'RABInv_ItemType_Jewelry' : Valuables_slot,
-'RABInv_ItemType_Jewelry_Equipped' : Misc_slot,
+'RABInv_ItemType_Jewelry_Equipped' : WeaponSheaths_slot,
 
 // misc
 'RABInv_ItemType_BookScroll' : Misc_slot,
@@ -396,26 +423,15 @@ function removeItemfromSlot(item: number, num: number = 1, oldSlot: Slot = undef
                 stopFlag = false; 
                 const i: number = slot.items.indexOf(item)
                 slot.items.splice(i,1)
+                slot.currentSize -= vol
             }
            else {stopFlag = true}
         });
         // if (stopFlag){return}
         // else {slot.currentSize -= vol}
         // oldSlot.currentSize -= vol
-        slot.currentSize -= vol
     // }
     Slot.updateWidgets()
-}
-
-function swapBetweenSlots(oldSlot: Slot, newSlot: Slot, option: string, item: number, num: number) {
-    if (option == 'unequip'){ 
-        removeItemfromSlot(item, num);
-        const oldCat: number = determineItemCategory(item);
-        const newCat: number = oldCat - 1
-        const vol: number = Object.values(itemCategoryVolumes)[newCat]
-    }
-    removeItemfromSlot(item, num, Equipped_slot)
-    addItemtoSlot(item, num)
 }
 
 
@@ -433,6 +449,7 @@ function slotLookatItem(item: number, num: number = 1) {
     const slot: Slot = tuple[1]
     let slotMax: number = slot.baseSize
     let slotCurrent: number = +( slot.currentSize ).toFixed(2)
+    // printConsole(`lotAtItem:: slot.baseSize = ${slot.baseSize}`)
     Slot.updateWidgets()
     inventoryCurrentHighlighted.setAlpha(1)
     inventoryCurrentHighlighted.setText(`Volume: ${vol}\nSlot: ${slot.name}`)
@@ -452,6 +469,7 @@ const GetItemHighlighted = async (item: number) => {
     if (!vol || !slot){return;}
     let slotMax: number = slot.baseSize
     let slotCurrent: number = +( slot.currentSize ).toFixed(2)
+    // printConsole(`GetItemHighlighted:: slot.baseSize = ${slot.baseSize}`)
 
     Slot.updateWidgets()
     const isInventory: boolean = Ui.isMenuOpen('InventoryMenu')
@@ -459,33 +477,33 @@ const GetItemHighlighted = async (item: number) => {
 
     inventoryCurrentHighlighted.setText(`Volume: ${vol}\nSlot: ${slot.name}`)
 
-    // if (isInventory){
-    //     // slot.widget.setText(`${slotCurrent} (+${vol}) /${slotMax}`)
-    //     inventoryCurrentHighlighted.setText(`Volume: ${vol}\nSlot: ${slot.name}`)
-    // }
-    // else if (isContainer) {
+    if (isInventory){
+        // slot.widget.setText(`${slotCurrent} (+${vol}) /${slot.baseSize}`)
+        inventoryCurrentHighlighted.setText(`Volume: ${vol}\nSlot: ${slot.name}`)
+    }
+    else if (isContainer) {
         slot.widget.setColor([0,1,0,1])
         if (isViewingContainer()){
             // slot.widget.setColor([1,0.1,.1,1])
-            // slot.widget.setText(`${slot.name}:  ${slotCurrent} (+${vol}) /${slotMax}`)
+            // slot.widget.setText(`${slot.name}:  ${slotCurrent} (+${vol}) /${slot.baseSize}`)
             if (isInventory){
-                slot.widget.setText(`${slot.name}:  ${slotCurrent + vol} (${slotCurrent + vol}) /${slotMax}`)
+                slot.widget.setText(`${slot.name}:  ${slotCurrent + vol} (${slotCurrent + vol}) /${slot.baseSize}`)
             }
             else if (isContainer){
-                slot.widget.setText(`${slot.name}:  ${slotCurrent + vol} (${slotCurrent + vol}) /${slotMax}`)
+                slot.widget.setText(`${slot.name}:  ${slotCurrent + vol} (${slotCurrent + vol}) /${slot.baseSize}`)
             }
         }
         else if (!isViewingContainer()){
-            if (slotCurrent + vol > slotMax){slot.widget.setColor([1,0,0,1])}
-            slot.widget.setText(`${slot.name}:  ${slotCurrent} (-${vol}) /${slotMax}`)
+            if (slotCurrent + vol > slot.baseSize){slot.widget.setColor([1,0,0,1])}
+            slot.widget.setText(`${slot.name}:  ${slotCurrent} (-${vol}) /${slot.baseSize}`)
         }
-    // }
+    }
 	Ui.invokeBool("HUD Menu", "_global.skyui.components.list.ListLayout.Refresh", true)
 	// printConsole(`${recieved.getName()} has been highlighted`)
 }
 
 
-function DropItem (itemId: number, num: number, ref: ObjectReference) {
+function DropItem (itemId: number, num: number) {
 	const handle = ModEvent.Create('YM_RAB_SLOTS_DropRequest');
 	ModEvent.PushInt(handle, itemId);
 	ModEvent.PushInt(handle, num);
@@ -554,30 +572,12 @@ mainMcm()
 
 const eventBlacklist: string[] = [ 'YM_OnSelect_selectPress', 'YM_OnHighlight_selectHighlight' ]
 
-on('modEvent', (event) => {
-	if (!eventBlacklist.includes(event.eventName)){return;}
-	// if (event.eventName == 'YM_OnSelect_selectPress' && !Ui.isMenuOpen('InventoryMenu')) {	GetItemSelected()}
-	// if (event.eventName.includes( 'selectHighlight' )) { GetItemHighlighted()}
-    // printConsole(Game.getFormEx( Ui.getInt("InventoryMenu", "_root.Menu_mc.inventoryLists.itemList.selectedEntry.formId") )?.getName())
-	
-	// Ui.invokeBool("HUD Menu", "_global.onItemHighlightChange", true)
-    // let path: string = '_global.'
-    // let endPath: string = 'containerMenu.isViewingContainer'
-    // printConsole(Ui.getInt('ContainerMenu', `${path + endPath}`) )
-    // printConsole(Ui.getInt('ContainerMenu', `${path}BaseInstance.${endPath}`) )
-    // printConsole(Ui.getInt('ContainerMenu', `_root.HUDMovieBaseInstance.isViewingContainer`) )
-    // printConsole(Ui.invokeBool('HUD Menu', `_global.skyui.components.list.ListLayout.Refresh`, true) )
-	// Ui.invokeBool("ContainerMenu", "_global.ItemMenus.InventoryLists.showPanel", true)
-
-	// Ui.invokeFloat("HUD Menu", "_root.HUDMovieBaseInstance.SetExhaustionPenaltyMeter", )
-
-});
-
 let handle
 on('menuOpen', (event) => {
     let lastitemName: number = -2
     if (event.name == 'InventoryMenu'){
         inventoryCurrentHighlighted.setAlpha(1); 
+        // printConsole(`menuOpen:: slot.baseSize = ${Misc_slot.baseSize}`)
         Slot.updateWidgets()
         // on('mouseMove', () => {
         //     printConsole(Game.getFormEx( Ui.getInt("InventoryMenu", "_root.Menu_mc.inventoryLists.itemList.selectedEntry.formId") )?.getName())
@@ -587,7 +587,7 @@ on('menuOpen', (event) => {
             const item: number = Ui.getInt("InventoryMenu", "_root.Menu_mc.inventoryLists.itemList.selectedEntry.formId") 
             if (!item){return;}
             if (item != lastitemName) { 
-                printConsole(Game.getFormEx( Ui.getInt("InventoryMenu", "_root.Menu_mc.inventoryLists.itemList.selectedEntry.formId") )?.getName())
+                // printConsole(Game.getFormEx( Ui.getInt("InventoryMenu", "_root.Menu_mc.inventoryLists.itemList.selectedEntry.formId") )?.getName())
                 GetItemHighlighted(item)
                 lastitemName = item 
             }
@@ -603,7 +603,7 @@ on('menuOpen', (event) => {
             const item: number = Ui.getInt("ContainerMenu", "_root.Menu_mc.inventoryLists.itemList.selectedEntry.formId") 
             if (!item){return;}
             if (item != lastitemName) { 
-                printConsole(isViewingContainer())
+                // printConsole(isViewingContainer())
                 // printConsole(Game.getFormEx( Ui.getInt("ContainerMenu", "_root.Menu_mc.inventoryLists.itemList.selectedEntry.formId") )?.getName())
                 GetItemHighlighted(item)
                 lastitemName = item 
@@ -619,6 +619,9 @@ on('menuClose', (event) => {
 
 once('update', () => {
 
+    // printConsole(Object.values(importFile()['volumes'])[ItemCategories.RABInv_ItemType_ArmorGauntlets])
+    // importSlotsfromFile()
+    // saveToDataFile()
     // importSettings()
     let s: string[] = [ 'Equipped_Load', 'Test2' ]
     let i: number = 20
@@ -634,6 +637,8 @@ once('update', () => {
         addItemtoSlot(f.getFormID(), pl()?.getItemCount(f))
     });
 
+    if (FileExists('data/platform/plugins/InventorySlots.js') && FileExists('data/platform/pluginsdev/InventorySlots.js')){printConsole('ABORT TESTING. THERE ARE TWO INSTANCES OF THIS SCRIPT')}
+    EvaluateInventory()
 });
 
 let ignoreFlag: boolean = false;
@@ -655,7 +660,7 @@ on('containerChanged', (event) => {
         if (slot.currentSize + volume > slot.baseSize) {
             // if the item was picked up from the world
             if (!event.oldContainer){
-                DropItem(itemId, num, event.oldContainer)
+                DropItem(itemId, num)
                 // printConsole('!event.oldContainer')
             }
             // if the item was taken from a container
@@ -675,14 +680,16 @@ on('containerChanged', (event) => {
     }
     else {ignoreFlag = false}
     if (slot.currentSize <= 0) {slot.currentSize = 0}
+    // printConsole( Misc_slot.baseSize )
 });
 
 let isFadein: boolean = false
 on('crosshairRefChanged', (event) => {
     const id: number = event.reference?.getBaseObject()?.getFormID()
-    const typeBlacklist: number[] = [FormType.Character, FormType.Activator, FormType.Door, FormType.Apparatus, FormType.Container, FormType.NPC]
+    const typeBlacklist: number[] = [FormType.Character, FormType.Activator, FormType.Door, FormType.Apparatus, FormType.Container, FormType.NPC, FormType.Flora, FormType.Tree]
     if (event.reference?.getBaseObject()?.isPlayable() && !typeBlacklist.includes(event.reference?.getBaseObject()?.getType())){
             isFadein = true
+            Slot.updateWidgets()
             Slot.fadeAllIn()
             slotLookatItem(id)
     }
