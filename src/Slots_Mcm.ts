@@ -1,8 +1,8 @@
-import {on, once, hooks, printConsole, Game, Form, Debug, Key } from  'skyrimPlatform';
-import { FormListToArray, GetStringValue, SetFloatValue, SetIntValue, SetStringValue, StringListAdd, StringListClear, StringListCopy, StringListToArray } from "@skyrim-platform/papyrus-util/StorageUtil";
+import {on, once, hooks, printConsole, Game, Form, Debug, Key, PlayerPositionEventType } from  'skyrimPlatform';
+import { FormListToArray, GetStringValue, SetFloatValue, SetIntValue, SetStringValue, StringListAdd, StringListClear, StringListCopy, StringListRemove, StringListToArray } from "@skyrim-platform/papyrus-util/StorageUtil";
 import * as mcm from "@skyrim-platform/mcm-helper/MCM"
 import { ModEvent } from "./modevent";
-import { ItemCategories, BaseSlots, Slot } from "./InventorySlots";
+import { getSlotFromName, ItemCategories,  Slot, saveToDataFile, importDataFromFile, categoryToSlot, itemCategoryVolumes, EvaluateInventory } from "./InventorySlots";
 
 
 //___________VARIABLES______________________________________
@@ -14,8 +14,8 @@ let mcm_settings = {
     addSlotButton: 'bAddSlotButton:Slots',
     removeSlotButton: 'bDeleteSlotButton:Slots',
     sliderSlotMax: 'fSlotMax:Slots',
-    AddCategories: 'sSlotCategoriesRemove:Lists',
-    RemoveCategories: 'sSlotCategoriesAdd:Lists',
+    AddCategories: 'sSlotCategoriesAdd:Lists',
+    RemoveCategories: 'sSlotCategoriesRemove:Lists',
 
 }
 
@@ -69,36 +69,60 @@ export const saveSettings = function () {
 }
 
 function initItemCategoriesList(){
-    Object.values(ItemCategories).forEach(c => {
-        if (Number(c) || c as number == 0 ){return;}
-        StringListAdd(null, storageKeys.categories, c as string)
-    });
+    // Object.values(ItemCategories).forEach(c => {
+    //     if (Number(c) || c as number == 0 ){return;}
+    //     StringListAdd(null, storageKeys.categories, c as string)
+    // });
+
 }
 
 function FillMCMOptions () {
 	FilterMCMOptions('')	
 	var a: Form[] 
 
-    StringListClear(null, mcm_settings.SelectedSlot)
-    StringListClear(null, storageKeys.menuBlackList)
-    StringListClear(null, storageKeys.menuWhiteList)
-    StringListAdd(null, mcm_settings.SelectedSlot, 'No Changes')
-    StringListAdd(null, storageKeys.menuWhiteList, 'No Changes')
-    StringListAdd(null, storageKeys.menuBlackList, 'No Changes')
-    BaseSlots.forEach(s => {
-        let name: string = s.name
-        StringListAdd(null, mcm_settings.SelectedSlot, name)
-        StringListAdd(null, storageKeys.menuWhiteList, name)
-        StringListAdd(null, storageKeys.menuBlackList, name)
+    let lists: string[] = [ mcm_settings.SelectedSlot, storageKeys.menuBlackList, storageKeys.menuWhiteList ]
+
+    lists.forEach(list => {
+        StringListClear(null,list)
+        StringListAdd(null, list, 'No Changes')
+        mcm.SetModSettingString(modname, list, "No Changes")
     });
-    mcm.SetModSettingString(modname, mcm_settings.SelectedSlot, "No Changes")
-    mcm.SetModSettingString(modname, mcm_settings.RemoveCategories, "No Changes")
-    mcm.SetModSettingString(modname, mcm_settings.AddCategories, "No Changes")
+
+    Slot.getAllSlotNames().forEach(s => {
+        let name: string = s
+        StringListAdd(null, mcm_settings.SelectedSlot, name)
+    });
+
     HideGroupOne(true)
 	// SetMenuOptions()
 	// RefreshMCM()
 	// // printConsole('refreshmenu has been sent')
 };
+
+function fillSlotCategoryLists(selected_slot: Slot){
+
+
+    let lists: string[] = [ storageKeys.menuBlackList, storageKeys.menuWhiteList ]
+
+    lists.forEach(list => {
+        StringListClear(null,list)
+        StringListAdd(null, list, 'No Changes')
+        mcm.SetModSettingString(modname, list, "No Changes")
+    });
+
+    Object.keys(categoryToSlot).forEach((c, i) => {
+        if (Number(c) || c == '0'){return;}
+        let slot: Slot = Object.values(categoryToSlot)[i]
+        // c = c.slice(c.lastIndexOf('_') + 1)
+        if (slot == selected_slot){
+
+            StringListAdd(null, storageKeys.menuBlackList, c)
+        }
+        else {
+            StringListAdd(null, storageKeys.menuWhiteList, c)
+        }
+    });
+}
 
 // Function to clear and refill the mcm menu lists according to a filter criteria
 function FilterMCMOptions (query: string) {
@@ -134,15 +158,6 @@ function HideGroupOne(makeVisible: boolean){
     RefreshMCM()
 }
 
-function getSlotFromName(name: string): Slot | undefined{
-    let output: Slot | undefined = undefined
-    BaseSlots.forEach(s => {
-        let s_name: string = s.name
-        if (name.toLowerCase() == s_name.toLowerCase()) {output = s}
-    });
-    return output
-}
-
 function stringToSetting(changed_setting: string){
     let i: number = Object.values(mcm_settings).indexOf(changed_setting)
     return Object.values(mcm_settings)[i]
@@ -154,26 +169,38 @@ function solveSlotStoragePath(s: Slot){
 
 function SetFloatSetting(changed_setting: string, slot: Slot) {
     let key: string = stringToSetting(changed_setting)
-    SetFloatValue(null, `YM.Slots.${ slot.name }.${key}`, mcm.GetModSettingFloat(modname, key))
-    slot.baseSize = mcm.GetModSettingFloat(modname, key)
+
+    // SetFloatValue(null, `YM.Slots.${ slot.name }.${key}`, mcm.GetModSettingFloat(modname, key))
+    slot.baseSize = mcm.GetModSettingFloat(modname, changed_setting)
 }
 
 function SetIntSetting(changed_setting: string, slot: Slot) {
     let key: string = stringToSetting(changed_setting)
-    SetIntValue(null, 'YM.Slots.' + key, mcm.GetModSettingInt(modname, key))
-    slot.baseSize = mcm.GetModSettingFloat(modname, key)
+    // SetIntValue(null, 'YM.Slots.' + key, mcm.GetModSettingInt(modname, key))
+    // slot.baseSize = mcm.GetModSettingFloat(modname, key)
 }
 
 function SetBoolSetting(changed_setting: string, slot: Slot) {
     let key: string = stringToSetting(changed_setting)
-    SetIntValue(null, 'YM.Slots.' + key, mcm.GetModSettingBool(modname, key) ? 1:0)
-    slot.baseSize = mcm.GetModSettingFloat(modname, key)
+    let value: boolean = mcm.GetModSettingBool(modname, key)
+    if (key.includes('bAddSlot')){}
+    // SetIntValue(null, 'YM.Slots.' + key, mcm.GetModSettingBool(modname, key) ? 1:0)
 }
 
 function SetStringSetting(changed_setting: string, slot: Slot) {
     let key: string = stringToSetting(changed_setting)
-    SetStringValue(null,'YM.Slots.' + key, mcm.GetModSettingString(modname, key))
-    slot.baseSize = mcm.GetModSettingFloat(modname, key)
+    let value: string = mcm.GetModSettingString(modname, key)
+    if (value == 'No Changes') { return;}
+    if (key.includes('CategoriesRemove')){
+        StringListAdd(null, storageKeys.menuWhiteList, value);
+        StringListRemove(null, storageKeys.menuBlackList, value);
+        categoryToSlot[value] = Slot.getAllSlots()[0] // sets to the default slot 'Misc_slot'
+    }
+    else if (key.includes('CategoresAdd')){
+        StringListAdd(null, storageKeys.menuBlackList, value);
+        StringListRemove(null, storageKeys.menuWhiteList, value);
+        categoryToSlot[value] = slot
+    }
 }
 
 //__________EVENTS____________________________________________
@@ -184,13 +211,18 @@ export let mainMcm  = ()  => {
         pl()?.registerForModEvent('Slots_MCM_PageSelect', 'OnPageSelect')
         pl()?.registerForModEvent('Slots_Menu_Open', 'OnMenuOpen')
         pl()?.registerForModEvent('YM.Slots.SETTING_CHANGED', 'OnSettingChanged')
-        initItemCategoriesList()
+        pl()?.registerForModEvent('Slots_Menu_Close_Update', 'OnMenuClose')
+        // initItemCategoriesList()
     });
 
 
-    // on('modEvent', (event) => {
-    //     printConsole(event.eventName)
-    // });
+    hooks.sendPapyrusEvent.add({
+        enter(ctx) {
+            saveToDataFile()
+            Slot.updateWidgets()
+            EvaluateInventory()
+        },
+    }, 0x14, 0x14, 'OnMenuClose')
 
     hooks.sendPapyrusEvent.add({
         enter(ctx) {
@@ -204,26 +236,49 @@ export let mainMcm  = ()  => {
             // printConsole(ctx.papyrusEventName)
             once('update', () => {
                 let changed_setting: string = GetStringValue(null, storageKeys.changed_setting)
-                let value: string = mcm.GetModSettingString(modname, mcm_settings.SelectedSlot)
-                let slot: Slot = getSlotFromName(value)
-                // printConsole(changed_setting)
+                let value: string
+                let slot: Slot
+                printConsole(changed_setting)
+                value = mcm.GetModSettingString(modname, mcm_settings.SelectedSlot)
+                if (value.toLowerCase() == 'No Changes'.toLowerCase()){HideGroupOne(true)}
+                slot  = getSlotFromName(value) 
+                // printConsole(slot.name)
                 if (changed_setting.includes('ActiveSlot')){ 
-                    if (value == 'No Changes'){HideGroupOne(true)}
-                    else { HideGroupOne(false); mcm.SetModSettingFloat(modname, mcm_settings.sliderSlotMax, slot.baseSize)}
+                    if (!slot){return;}
+                    HideGroupOne(false); mcm.SetModSettingFloat(modname, mcm_settings.sliderSlotMax, slot.baseSize);
+                    fillSlotCategoryLists(slot) 
                 }
                 else if (changed_setting[0] == 'f'){
-                    SetFloatSetting(changed_setting, slot)
+                    // SetFloatSetting(changed_setting, slot)
+                    if (changed_setting.includes('SlotMax')){ 
+                        if (!slot){return;}
+                        slot.baseSize =  mcm.GetModSettingFloat(modname, changed_setting)
+                    }
+                    else if (changed_setting.includes('ItemType')){ 
+                        let newSize: number = mcm.GetModSettingFloat(modname, changed_setting)
+                        changed_setting = changed_setting.slice(1, changed_setting.length  - 11)
+                        printConsole(changed_setting)
+                        itemCategoryVolumes[changed_setting] = newSize
+                        printConsole(itemCategoryVolumes[changed_setting])
+                    }
+                    // if (changed_setting.includes('fSlotMax')){slot}
                 } 
                 else if (changed_setting[0] == 'i') {
+                    if (!slot){return;}
                     SetIntSetting(changed_setting, slot)
                 }
                 else if (changed_setting[0] == 'b') {
+                    if (!slot){return;}
                     SetBoolSetting(changed_setting, slot)
                 }
                 else if (changed_setting[0] == 's') {
+                    if (!slot){return;}
+                    if (value == 'No Changes') { return;}
                     SetStringSetting(changed_setting, slot)
+                    printConsole( mcm.GetModSettingString(modname, mcm_settings.RemoveCategories ) )
                 }
 
+                SetMenuOptions()
             });
             
         },
