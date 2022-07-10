@@ -533,35 +533,93 @@ function isViewingContainer() {
     return Ui.getInt("ContainerMenu", "_root.Menu_mc.inventoryLists.categoryList.activeSegment") ? false:true
 }
 
-function saveSettings(){
-    let values: number[] = Object.values(itemCategoryVolumes)
-    let keys: string[] = Object.keys(itemCategoryVolumes)
+export function saveToDataFile(){
+    let data_json: string = 'data/skse/plugins/InventorySlots/Slots.json' 
+    // Check if json file exists, and create one if otherwise
+    if (!FileExists(data_json)){ WriteToFile(data_json, JSON.stringify({}), false) }
+    let oldFile: string = ReadFromFile(data_json)
+    // If the file is empty, like after just being created or something, give it the initial {} 'squacket' things
+    if (oldFile.length == 0){ WriteToFile(data_json, JSON.stringify({}), false); saveToDataFile() }
+    let innerDict =  JSON.parse(oldFile) 
+    innerDict['volumes'] = itemCategoryVolumes
+    innerDict['slots'] = Slot.getAllSlots() 
+    let slotNames: string[][] = []
+    let catNames: string[] = Object.keys(categoryToSlot)
+    Object.values(categoryToSlot).forEach(( s, i ) => {
+        let name: string = s.name
+        let cat: string = catNames[i]
+        slotNames.push([cat, name])
+    });
+    innerDict['Category-to-Slots'] = slotNames
+    WriteToFile(data_json, JSON.stringify(innerDict), false)
+}
 
-    // Saving Item Category Volumes
-    once('update', () => {
-        values.forEach(val => {
-            let i: number = values.indexOf(val)
-            su.SetFloatValue(null, `YM.Slots.${keys[i]}`, val)    
-        });
+function importFile(){
+    let data_json: string = 'data/skse/plugins/InventorySlots/Slots.json' 
+    if (!FileExists(data_json)){ WriteToFile(data_json, JSON.stringify({}), false) }
+    let oldFile: string = ReadFromFile(data_json)
+    if (oldFile.length == 0){ WriteToFile(data_json, JSON.stringify({}), false); saveToDataFile() }
+    else { return JSON.parse(oldFile)}
+}
+
+export function getSlotFromName(name: string): Slot | undefined{
+    let output: Slot | undefined = undefined
+    Slot.getAllSlots().forEach(s => {
+        let s_name: string = s.name
+        if (name.toLowerCase() == s_name.toLowerCase()) {output = s}
+    });
+    return output
+
+}
+
+function importSlotsfromFile(){
+    let slot_info = importFile()['slots']
+    let names = []
+    slot_info.forEach(s => {
+        let name: string = s['name']
+        if (!Slot.getAllSlotNames().includes(name)) { names.push([name, s['baseSize'], s['x'], s['y']])}
+        else {
+            let new_size: number = s['baseSize']
+            let index: number = Slot.getAllSlotNames().indexOf(name)
+            let oldSlot: Slot = Slot.getAllSlots()[index]
+            // printConsole(`The old size is ${oldSlot.baseSize} and the new size is ${new_size}`)
+            oldSlot.baseSize = new_size
+        }
+    });
+    Slot.updateWidgets()
+    // printConsole(`The new slots are ${names}`)
+    names.forEach(info => {
+        let name: string = info[0][0]
+        let size: number = info[0][1]
+        let x: number = info[0][2]
+        let y: number = info[0][3]
+        new Slot(name, size, x, y)
     });
 
-    // Save Slot information
-    once('update', () => {
-        BaseSlots.forEach(s => {
-            let name: string = s.name
-            su.StringListAdd(null, `YM.Slots.Slots`, name)
-            su.SetIntValue(null, `YM.Slots.${s.name}.fSlotMax:Slots`, s.baseSize)
-        });
+}
+
+function importCategoriesfromFile(){
+    let cats_slots = importFile()['Category-to-Slots']
+    cats_slots.forEach(cat_slot => {
+        let cat: string = cat_slot[0]
+        let slot_name: string = cat_slot[1]
+        let slot: Slot = getSlotFromName(slot_name)
+
+        categoryToSlot[cat] = slot
     });
 }
 
-function importSettings(){
-    once('update', () => {
-        let slots: string[] = su.StringListToArray(null, 'YM.Slots.Slots')
-        slots.forEach(s => {
-            new Slot(s, su.GetIntValue(null, `YM.Slots.${s}.fSlotMax:Slots`), x, y - 20)
-        });
+export function importDataFromFile(){
+    importCategoriesfromFile()
+    importSlotsfromFile()
+}
 
+
+export function EvaluateInventory() {
+    // Re-evaluate player inventory and fill slots accordingly
+    const allItems: Form[] = AddAllItemsToArray(pl(), false, false, true)
+    allItems.forEach(f => {
+        addItemtoSlot(f.getFormID(), pl()?.getItemCount(f))
     });
 }
 
@@ -622,21 +680,7 @@ once('update', () => {
     // printConsole(Object.values(importFile()['volumes'])[ItemCategories.RABInv_ItemType_ArmorGauntlets])
     // importSlotsfromFile()
     // saveToDataFile()
-    // importSettings()
-    let s: string[] = [ 'Equipped_Load', 'Test2' ]
-    let i: number = 20
-    s.forEach(name => {
-        let slot: Slot = new Slot(name, su.GetIntValue(null, `YM.Slots.${name}.fSlotMax:Slots`, 50), x, y - i)
-        categoryToSlot.RABInv_ItemType_Potion = slot
-
-        i += 20
-    });
-
-    const allItems: Form[] = AddAllItemsToArray(pl(), false, false, true)
-    allItems.forEach(f => {
-        addItemtoSlot(f.getFormID(), pl()?.getItemCount(f))
-    });
-
+    importDataFromFile()
     if (FileExists('data/platform/plugins/InventorySlots.js') && FileExists('data/platform/pluginsdev/InventorySlots.js')){printConsole('ABORT TESTING. THERE ARE TWO INSTANCES OF THIS SCRIPT')}
     EvaluateInventory()
 });
