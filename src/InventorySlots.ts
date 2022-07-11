@@ -8,7 +8,7 @@ import { Ui } from '@skyrim-platform/skyrim-platform';
 import {AddAllItemsToArray} from '@skyrim-platform/po3-papyrus-extender/PO3_SKSEFunctions'
 import { mainMcm } from "./Slots_Mcm";
 
-
+// script check
 once('update', () => {
     const checkScriptNumbers = function (name: string) {
             if (FileExists(`data/platform/plugins/${name}`) && FileExists(`data/platform/pluginsdev/${name}`)){printConsole('ABORT TESTING. THERE ARE TWO INSTANCES OF THIS SCRIPT')}
@@ -286,6 +286,9 @@ export class Slot {
     getFilledProportion(){
         return `${this.name}:   ${this.currentSize.toFixed(2)} / ${this.baseSize.toFixed(2)}`
     }
+    grayIn(){
+        this.widget.setAlpha(1)
+    }
     static updateWidgets(){
         BaseSlots.forEach(s => {
             if (s.currentSize <= 0) {s.currentSize = 0}
@@ -313,6 +316,18 @@ export class Slot {
     }
     static getAllSlots(){
         return BaseSlots
+    }
+    static resetSlotCapacities(){
+        this.getAllSlots().forEach(s => {
+            s.currentSize = 0
+        });
+        this.updateWidgets()
+    }
+    static grayOutAll(){
+        this.getAllSlots().forEach(s => {
+            s.widget.setAlpha(0.0)
+        });
+        this.updateWidgets()
     }
     // static getSlotsDict(){
     //     var names_slots = {}
@@ -366,7 +381,7 @@ export var categoryToSlot ={
 'RABInv_ItemType_ArmorGauntlets' : Misc_slot,
 'RABInv_ItemType_ArmorGauntlets_Equipped' : WeaponSheaths_slot,
 'RABInv_ItemType_Clothes' : Misc_slot,
-'RABInv_ItemType_Clothes_Equipped' : WeaponSheaths_slot,
+'RABInv_ItemType_Clothes_Equipped' : Misc_slot,
 'RABInv_ItemType_Jewelry' : Valuables_slot,
 'RABInv_ItemType_Jewelry_Equipped' : WeaponSheaths_slot,
 
@@ -447,58 +462,62 @@ function slotLookatItem(item: number, num: number = 1) {
     let tuple = solveIncomingItemInfo(item)
     const vol: number = +( tuple[0] ).toFixed(2) * num
     const slot: Slot = tuple[1]
-    let slotMax: number = slot.baseSize
+    let slotMax: number = slot.baseSize.toFixed(2)
     let slotCurrent: number = +( slot.currentSize ).toFixed(2)
     // printConsole(`lotAtItem:: slot.baseSize = ${slot.baseSize}`)
     Slot.updateWidgets()
     inventoryCurrentHighlighted.setAlpha(1)
     inventoryCurrentHighlighted.setText(`Volume: ${vol}\nSlot: ${slot.name}`)
-    slot.widget.setText(`${slot.name}:  ${slotCurrent} (+${vol}) /${slotMax}`)
+    // slot.widget.setText(`${slot.name}:  ${slotCurrent} (+${vol}) /${slotMax}`)
+    slot.widget.setText(`${slot.name}:  ${slotCurrent} (${slotCurrent + vol}) /${slot.baseSize.toFixed(2)}`)
     slot.widget.setColor([0,1,0,1])
 }
 
 const GetItemHighlighted = async (item: number) => {
 	await Utility.wait(0.001);
     inventoryCurrentHighlighted.setAlpha(1); 
+    // Slot.grayOutAll()
 	// const recieved: Form = su.GetFormValue(null, "YM.RAB.Highlight.")
     // printConsole(recieved.getName())
 	// if (!recieved) {return;}
+
+    const count: number = getHighlightedItemCount()
     let tuple = solveIncomingItemInfo(item)
-    const vol: number = +( tuple[0] ).toFixed(2)
+    let vol: number = +( tuple[0] ).toFixed(2)
     const slot: Slot = tuple[1]
     if (!vol || !slot){return;}
-    let slotMax: number = slot.baseSize
+    let slotMax: number = slot.baseSize.toFixed(2)
     let slotCurrent: number = +( slot.currentSize ).toFixed(2)
     // printConsole(`GetItemHighlighted:: slot.baseSize = ${slot.baseSize}`)
+    // slot.grayIn()
 
     Slot.updateWidgets()
     const isInventory: boolean = Ui.isMenuOpen('InventoryMenu')
     const isContainer: boolean = Ui.isMenuOpen('ContainerMenu')
 
+    // printConsole(`Volume: ${vol}\nSlot: ${slot.name}`)
     inventoryCurrentHighlighted.setText(`Volume: ${vol}\nSlot: ${slot.name}`)
-
+    vol *= count
     if (isInventory){
-        // slot.widget.setText(`${slotCurrent} (+${vol}) /${slot.baseSize}`)
-        inventoryCurrentHighlighted.setText(`Volume: ${vol}\nSlot: ${slot.name}`)
+
     }
     else if (isContainer) {
         slot.widget.setColor([0,1,0,1])
+        // slot.widget.setColorR(0)
+        // slot.widget.setColorG(1)
+        // slot.widget.setColorB(0)
         if (isViewingContainer()){
             // slot.widget.setColor([1,0.1,.1,1])
+            if (slotCurrent + vol > slotMax){slot.widget.setColor([1,0,0,1])}
             // slot.widget.setText(`${slot.name}:  ${slotCurrent} (+${vol}) /${slot.baseSize}`)
-            if (isInventory){
-                slot.widget.setText(`${slot.name}:  ${slotCurrent + vol} (${slotCurrent + vol}) /${slot.baseSize}`)
-            }
-            else if (isContainer){
-                slot.widget.setText(`${slot.name}:  ${slotCurrent + vol} (${slotCurrent + vol}) /${slot.baseSize}`)
-            }
+            slot.widget.setText(`${slot.name}:  ${slotCurrent} (${slotCurrent + vol}) /${slotMax}`)
         }
         else if (!isViewingContainer()){
-            if (slotCurrent + vol > slot.baseSize){slot.widget.setColor([1,0,0,1])}
-            slot.widget.setText(`${slot.name}:  ${slotCurrent} (-${vol}) /${slot.baseSize}`)
+            if (slotCurrent + vol > slotMax){slot.widget.setColor([1,0,0,1])}
+            slot.widget.setText(`${slot.name}:  ${slotCurrent} (${slotCurrent - vol}) /${slotMax}`)
         }
     }
-	Ui.invokeBool("HUD Menu", "_global.skyui.components.list.ListLayout.Refresh", true)
+	// Ui.invokeBool("HUD Menu", "_global.skyui.components.list.ListLayout.Refresh", true)
 	// printConsole(`${recieved.getName()} has been highlighted`)
 }
 
@@ -517,7 +536,8 @@ const waitRemoveItem = async (item: number, container: number) => {
 }
 
 function DenySelection(itemId: number, oldContainer: ObjectReference, slotName: string = 'Its slot') {
-	pl()?.removeItem(Game.getFormEx(itemId), 1, true, oldContainer) 
+    let count: number = getHighlightedItemCount()
+	pl()?.removeItem(Game.getFormEx(itemId), count, true, oldContainer) 
 	Ui.invokeBool("HUD Menu", "_global.skyui.components.list.ListLayout.Refresh", true)
     Debug.notification(`You can not pick this item up. ${slotName} is full`)
 }
@@ -532,6 +552,17 @@ const waitFadeOut = async () => {
 function isViewingContainer() {
     return Ui.getInt("ContainerMenu", "_root.Menu_mc.inventoryLists.categoryList.activeSegment") ? false:true
 }
+
+export function EvaluateInventory() {
+    // Re-evaluate player inventory and fill slots accordingly
+    Slot.resetSlotCapacities()
+    const allItems: Form[] = AddAllItemsToArray(pl(), false, false, true)
+    allItems.forEach(f => {
+        addItemtoSlot(f.getFormID(), pl()?.getItemCount(f))
+    });
+}
+
+// JSON file functions
 
 export function saveToDataFile(){
     let data_json: string = 'data/skse/plugins/InventorySlots/Slots.json' 
@@ -614,15 +645,6 @@ export function importDataFromFile(){
     importSlotsfromFile()
 }
 
-
-export function EvaluateInventory() {
-    // Re-evaluate player inventory and fill slots accordingly
-    const allItems: Form[] = AddAllItemsToArray(pl(), false, false, true)
-    allItems.forEach(f => {
-        addItemtoSlot(f.getFormID(), pl()?.getItemCount(f))
-    });
-}
-
 //____________________________________EVENTS______________________________________________
 
 // mcm script
@@ -633,46 +655,36 @@ const eventBlacklist: string[] = [ 'YM_OnSelect_selectPress', 'YM_OnHighlight_se
 let handle
 on('menuOpen', (event) => {
     let lastitemName: number = -2
-    if (event.name == 'InventoryMenu'){
-        inventoryCurrentHighlighted.setAlpha(1); 
-        // printConsole(`menuOpen:: slot.baseSize = ${Misc_slot.baseSize}`)
-        Slot.updateWidgets()
-        // on('mouseMove', () => {
-        //     printConsole(Game.getFormEx( Ui.getInt("InventoryMenu", "_root.Menu_mc.inventoryLists.itemList.selectedEntry.formId") )?.getName())
-        // });
-        handle = on('update', () => {
+    const menuName: string = event.name 
+    if (menuName != 'ContainerMenu' && menuName != 'InventoryMenu') {return;}
+    let item: number = 0
+    // if (!item){return;}
+    inventoryCurrentHighlighted.setAlpha(1); 
+    Slot.updateWidgets()
+    // on('mouseMove', () => {
+    //     printConsole(Game.getFormEx( Ui.getInt("InventoryMenu", "_root.Menu_mc.inventoryLists.itemList.selectedEntry.formId") )?.getName())
+    // });
+    handle = on('update', () => {
+        if (menuName === 'InventoryMenu'){
+            item = Ui.getInt("InventoryMenu", "_root.Menu_mc.inventoryLists.itemList.selectedEntry.formId") 
+        }
+        else if ( menuName === 'ContainerMenu'){
+            item = Ui.getInt("ContainerMenu", "_root.Menu_mc.inventoryLists.itemList.selectedEntry.formId") 
+        }
+        if (item != lastitemName) { 
+            GetItemHighlighted(item)
+            lastitemName = item 
+        }
 
-            const item: number = Ui.getInt("InventoryMenu", "_root.Menu_mc.inventoryLists.itemList.selectedEntry.formId") 
-            if (!item){return;}
-            if (item != lastitemName) { 
-                // printConsole(Game.getFormEx( Ui.getInt("InventoryMenu", "_root.Menu_mc.inventoryLists.itemList.selectedEntry.formId") )?.getName())
-                GetItemHighlighted(item)
-                lastitemName = item 
-            }
-
-        });
-    }
-    else if ( event.name == 'ContainerMenu'){
-        // printConsole(Game.getFormEx(Ui.getInt("ContainerMenu", "_root.Menu_mc.inventoryLists.itemList.selectedEntry.formId"))?.getName())
-        inventoryCurrentHighlighted.setAlpha(1); 
-        Slot.updateWidgets()
-        handle = on('update', () => {
-
-            const item: number = Ui.getInt("ContainerMenu", "_root.Menu_mc.inventoryLists.itemList.selectedEntry.formId") 
-            if (!item){return;}
-            if (item != lastitemName) { 
-                // printConsole(isViewingContainer())
-                // printConsole(Game.getFormEx( Ui.getInt("ContainerMenu", "_root.Menu_mc.inventoryLists.itemList.selectedEntry.formId") )?.getName())
-                GetItemHighlighted(item)
-                lastitemName = item 
-            }
-
-        });
-    }
+    });
 });
 
 on('menuClose', (event) => {
-    if (event.name == 'InventoryMenu' || event.name == 'ContainerMenu'){inventoryCurrentHighlighted.setAlpha(0); Slot.fadeAllOut(); unsubscribe(handle)}
+    if (event.name == 'InventoryMenu' || event.name == 'ContainerMenu'){inventoryCurrentHighlighted.setAlpha(0);
+        Slot.fadeAllOut(); 
+        if (handle){unsubscribe(handle);}
+        EvaluateInventory()
+    }
 });
 
 once('update', () => {
