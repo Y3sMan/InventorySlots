@@ -218,9 +218,9 @@ export let mainMcm  = ()  => {
 
     hooks.sendPapyrusEvent.add({
         enter(ctx) {
+            EvaluateInventory()
             saveToDataFile()
             Slot.updateWidgets()
-            EvaluateInventory()
         },
     }, 0x14, 0x14, 'OnMenuClose')
 

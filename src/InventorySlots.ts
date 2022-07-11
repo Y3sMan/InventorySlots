@@ -562,6 +562,12 @@ export function EvaluateInventory() {
     });
 }
 
+function getHighlightedItemCount(){
+    if (Ui.isMenuOpen('ContainerMenu')){    return Ui.getInt("ContainerMenu", "_root.Menu_mc.inventoryLists.itemList.selectedEntry.count") }
+    else if (Ui.isMenuOpen('InventoryMenu')){    return Ui.getInt("InventoryMenu", "_root.Menu_mc.inventoryLists.itemList.selectedEntry.count") }
+    return 1
+}
+
 // JSON file functions
 
 export function saveToDataFile(){
@@ -705,27 +711,36 @@ on('containerChanged', (event) => {
 	const itemId: number = event.baseObj.getFormID()
 	const num: number = event.numItems
     const info: [number, Slot] = solveIncomingItemInfo(event.baseObj.getFormID())
-    const volume: number = info[0]
+    const volume: number = info[0] * getHighlightedItemCount()
     const slot: Slot = info[1]
     if (event.oldContainer) {oldId = event.oldContainer.getFormID()}
     if (event.newContainer) {newId = event.newContainer.getFormID()}
     // if (ignoreFlag){ignoreFlag = false; return;}
+
+    printConsole(`oldcontainer == ${ event.oldContainer.getFormID() }`)
+    printConsole(`newcontainer == ${ event.newContainer.getFormID() }`)
     // Item added to player's inventory
     if (newId == 20 && !ignoreFlag){
+
         // the slot is filled
         if (slot.currentSize + volume > slot.baseSize) {
+
             // if the item was picked up from the world
             if (!event.oldContainer){
                 DropItem(itemId, num)
                 // printConsole('!event.oldContainer')
             }
+
             // if the item was taken from a container
             else {
+                printConsole('Trying to deny selection')
                 DenySelection(itemId, event.oldContainer, slot.name)
                 // printConsole('event.oldContainer')
             }
             ignoreFlag = true 
+            
         }
+
         else{
             addItemtoSlot(itemId, num)
         }
