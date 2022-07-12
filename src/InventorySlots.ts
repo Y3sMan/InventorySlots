@@ -711,38 +711,65 @@ on('containerChanged', (event) => {
 	const itemId: number = event.baseObj.getFormID()
 	const num: number = event.numItems
     const info: [number, Slot] = solveIncomingItemInfo(event.baseObj.getFormID())
-    const volume: number = info[0] * getHighlightedItemCount()
+    const volume: number = info[0] 
+    const fullVolume: number = volume * num
     const slot: Slot = info[1]
     if (event.oldContainer) {oldId = event.oldContainer.getFormID()}
     if (event.newContainer) {newId = event.newContainer.getFormID()}
     // if (ignoreFlag){ignoreFlag = false; return;}
 
-    printConsole(`oldcontainer == ${ event.oldContainer.getFormID() }`)
-    printConsole(`newcontainer == ${ event.newContainer.getFormID() }`)
+    // printConsole(`oldcontainer == ${ event.oldContainer.getFormID() }`)
+    // printConsole(`newcontainer == ${ event.newContainer.getFormID() }`)
     // Item added to player's inventory
     if (newId == 20 && !ignoreFlag){
 
-        // the slot is filled
-        if (slot.currentSize + volume > slot.baseSize) {
+        // check how many are in an item stack and if any are allowed to be picked up
+        let allowedCount: number = (slot.baseSize - slot.currentSize) / volume 
+        let disallowedCount: number = num - allowedCount
 
+        // the slot is filled
+        if (allowedCount <= 1){ 
+            if (slot.currentSize + fullVolume > slot.baseSize ) {
+
+                // if the item was picked up from the world
+                if (!event.oldContainer){
+                    DropItem(itemId, num)
+                    // printConsole('!event.oldContainer')
+                }
+
+                // if the item was taken from a container
+                else {
+                    printConsole('Trying to deny selection')
+                    // Flat out prevent taking the item
+                    DenySelection(itemId, event.oldContainer, slot.name)
+                    // printConsole('event.oldContainer')
+                }
+                ignoreFlag = true 
+                
+            }
+            else {
+                addItemtoSlot(itemId, num)
+            }
+        }
+        else if (allowedCount > 1){
+            addItemtoSlot(itemId, allowedCount);
+            // removeItemfromSlot(itemId, disallowedCount)
             // if the item was picked up from the world
             if (!event.oldContainer){
-                DropItem(itemId, num)
+                DropItem(itemId, disallowedCount)
                 // printConsole('!event.oldContainer')
             }
 
             // if the item was taken from a container
             else {
+                // Check if it's possible to allow a few through, like arrows
                 printConsole('Trying to deny selection')
+                // Flat out prevent taking the item
                 DenySelection(itemId, event.oldContainer, slot.name)
                 // printConsole('event.oldContainer')
             }
             ignoreFlag = true 
-            
-        }
 
-        else{
-            addItemtoSlot(itemId, num)
         }
     }
     // Item removed from player's inventory
