@@ -324,10 +324,10 @@ export class Slot {
         this.updateWidgets()
     }
     static grayOutAll(){
-        this.getAllSlots().forEach(s => {
-            s.widget.setAlpha(0.0)
-        });
         this.updateWidgets()
+        this.getAllSlots().forEach(s => {
+            s.widget.setAlpha(0.5)
+        });
     }
     // static getSlotsDict(){
     //     var names_slots = {}
@@ -347,8 +347,8 @@ let Bottles_slot = new Slot('Bottles',10, x, y + 80)
 
 function determineItemsSlot(item: number): Slot{
     const category: number = determineItemCategory(item)
-    // printConsole(`determineItemCategory:: category number == ${category}`)
     const key= Object.keys(categoryToSlot)[category]
+    // printConsole(`determineItemCategory:: category number == ${key}`)
     return Object.values(categoryToSlot)[category]
 }
 
@@ -410,6 +410,7 @@ function addItemtoSlot(item: number, num: number = 1, newSlot: Slot = undefined)
     let slot: Slot
     let tuple = solveIncomingItemInfo(item)
     const vol: number = tuple[0] * num
+    printConsole(`additemtoslot:: vol:: ${vol}`)
     if (!newSlot){
         slot = tuple[1]
     }
@@ -466,17 +467,18 @@ function slotLookatItem(item: number, num: number = 1) {
     let slotCurrent: number = +( slot.currentSize ).toFixed(2)
     // printConsole(`lotAtItem:: slot.baseSize = ${slot.baseSize}`)
     Slot.updateWidgets()
-    inventoryCurrentHighlighted.setAlpha(1)
+    // inventoryCurrentHighlighted.setAlpha(1)
     inventoryCurrentHighlighted.setText(`Volume: ${vol}\nSlot: ${slot.name}`)
     // slot.widget.setText(`${slot.name}:  ${slotCurrent} (+${vol}) /${slotMax}`)
-    slot.widget.setText(`${slot.name}:  ${slotCurrent} (${slotCurrent + vol}) /${slot.baseSize.toFixed(2)}`)
-    slot.widget.setColor([0,1,0,1])
+    slot.widget.setText(`${slot.name}:  ${slotCurrent} (${( slotCurrent + vol ).toFixed(2)}) /${slot.baseSize.toFixed(2)}`)
+
+    if (slotCurrent + vol > slotMax){slot.widget.setColor([1,0,0,1])} // if the item would overfill a slot
+    else {slot.widget.setColor([0,1,0,1])}
 }
 
 const GetItemHighlighted = async (item: number) => {
 	await Utility.wait(0.001);
-    inventoryCurrentHighlighted.setAlpha(1); 
-    // Slot.grayOutAll()
+    // inventoryCurrentHighlighted.setAlpha(1); 
 	// const recieved: Form = su.GetFormValue(null, "YM.RAB.Highlight.")
     // printConsole(recieved.getName())
 	// if (!recieved) {return;}
@@ -489,32 +491,35 @@ const GetItemHighlighted = async (item: number) => {
     let slotMax: number = slot.baseSize.toFixed(2)
     let slotCurrent: number = +( slot.currentSize ).toFixed(2)
     // printConsole(`GetItemHighlighted:: slot.baseSize = ${slot.baseSize}`)
-    // slot.grayIn()
+    // printConsole(`The selected item's slot is ${slot.name}`)
+    Slot.grayOutAll()
+    slot.grayIn()
 
-    Slot.updateWidgets()
     const isInventory: boolean = Ui.isMenuOpen('InventoryMenu')
     const isContainer: boolean = Ui.isMenuOpen('ContainerMenu')
+    const isBarter: boolean = Ui.isMenuOpen('BarterMenu')
 
     // printConsole(`Volume: ${vol}\nSlot: ${slot.name}`)
     inventoryCurrentHighlighted.setText(`Volume: ${vol}\nSlot: ${slot.name}`)
     vol *= count
-    if (isInventory){
-
-    }
-    else if (isContainer) {
-        slot.widget.setColor([0,1,0,1])
-        // slot.widget.setColorR(0)
-        // slot.widget.setColorG(1)
-        // slot.widget.setColorB(0)
+    if (isInventory){ }
+    else if (isContainer || isBarter) {
+        // slot.widget.setColor([0,1,0,1])
         if (isViewingContainer()){
+            slot.widget.setColorR(0)
+            slot.widget.setColorG(1)
+            slot.widget.setColorB(0)
             // slot.widget.setColor([1,0.1,.1,1])
             if (slotCurrent + vol > slotMax){slot.widget.setColor([1,0,0,1])}
             // slot.widget.setText(`${slot.name}:  ${slotCurrent} (+${vol}) /${slot.baseSize}`)
-            slot.widget.setText(`${slot.name}:  ${slotCurrent} (${slotCurrent + vol}) /${slotMax}`)
+            slot.widget.setText(`${slot.name}:  ${slotCurrent} (${( slotCurrent + vol ).toFixed(2)}) /${slotMax}`)
         }
         else if (!isViewingContainer()){
-            if (slotCurrent + vol > slotMax){slot.widget.setColor([1,0,0,1])}
-            slot.widget.setText(`${slot.name}:  ${slotCurrent} (${slotCurrent - vol}) /${slotMax}`)
+            slot.widget.setColorR(1)
+            slot.widget.setColorG(1)
+            slot.widget.setColorB(1)
+            // if (slotCurrent + vol > slotMax){slot.widget.setColor([1,0,0,1])}
+            slot.widget.setText(`${slot.name}:  ${slotCurrent} (${( slotCurrent - vol ).toFixed(2)}) /${slotMax}`)
         }
     }
 	// Ui.invokeBool("HUD Menu", "_global.skyui.components.list.ListLayout.Refresh", true)
@@ -535,8 +540,8 @@ const waitRemoveItem = async (item: number, container: number) => {
 	Ui.invokeBool("HUD Menu", "_global.skyui.components.list.ListLayout.Refresh", true)
 }
 
-function DenySelection(itemId: number, oldContainer: ObjectReference, slotName: string = 'Its slot') {
-    let count: number = getHighlightedItemCount()
+function DenySelection(itemId: number, count: number, oldContainer: ObjectReference, slotName: string = 'Its slot') {
+    // let count: number = getHighlightedItemCount()
 	pl()?.removeItem(Game.getFormEx(itemId), count, true, oldContainer) 
 	Ui.invokeBool("HUD Menu", "_global.skyui.components.list.ListLayout.Refresh", true)
     Debug.notification(`You can not pick this item up. ${slotName} is full`)
@@ -546,7 +551,7 @@ const waitFadeOut = async () => {
     await Utility.wait(1.5);
     if (isFadein){return;}
     Slot.fadeAllOut(); 
-    inventoryCurrentHighlighted.setAlpha(0)
+    // inventoryCurrentHighlighted.setAlpha(0)
 }
 
 function isViewingContainer() {
@@ -662,14 +667,9 @@ let handle
 on('menuOpen', (event) => {
     let lastitemName: number = -2
     const menuName: string = event.name 
-    if (menuName != 'ContainerMenu' && menuName != 'InventoryMenu') {return;}
+    if (menuName != 'InventoryMenu' && menuName != 'ContainerMenu' && menuName != 'BarterMenu') { return;}
     let item: number = 0
-    // if (!item){return;}
-    inventoryCurrentHighlighted.setAlpha(1); 
     Slot.updateWidgets()
-    // on('mouseMove', () => {
-    //     printConsole(Game.getFormEx( Ui.getInt("InventoryMenu", "_root.Menu_mc.inventoryLists.itemList.selectedEntry.formId") )?.getName())
-    // });
     handle = on('update', () => {
         if (menuName === 'InventoryMenu'){
             item = Ui.getInt("InventoryMenu", "_root.Menu_mc.inventoryLists.itemList.selectedEntry.formId") 
@@ -677,7 +677,11 @@ on('menuOpen', (event) => {
         else if ( menuName === 'ContainerMenu'){
             item = Ui.getInt("ContainerMenu", "_root.Menu_mc.inventoryLists.itemList.selectedEntry.formId") 
         }
+        else if ( menuName === 'BarterMenu'){
+            item = Ui.getInt("BarterMenu", "_root.Menu_mc.inventoryLists.itemList.selectedEntry.formId") 
+        }
         if (item != lastitemName) { 
+            inventoryCurrentHighlighted.setAlpha(1); 
             GetItemHighlighted(item)
             lastitemName = item 
         }
@@ -686,11 +690,11 @@ on('menuOpen', (event) => {
 });
 
 on('menuClose', (event) => {
-    if (event.name == 'InventoryMenu' || event.name == 'ContainerMenu'){inventoryCurrentHighlighted.setAlpha(0);
-        Slot.fadeAllOut(); 
-        if (handle){unsubscribe(handle);}
-        EvaluateInventory()
-    }
+    inventoryCurrentHighlighted.setColor([1,1,1,0])
+    if (event.name != 'InventoryMenu' && event.name != 'ContainerMenu') { return;}
+    if (handle){unsubscribe(handle);}
+    EvaluateInventory();
+    Slot.fadeAllOut(); 
 });
 
 once('update', () => {
@@ -698,8 +702,8 @@ once('update', () => {
     // printConsole(Object.values(importFile()['volumes'])[ItemCategories.RABInv_ItemType_ArmorGauntlets])
     // importSlotsfromFile()
     // saveToDataFile()
-    importDataFromFile()
     if (FileExists('data/platform/plugins/InventorySlots.js') && FileExists('data/platform/pluginsdev/InventorySlots.js')){printConsole('ABORT TESTING. THERE ARE TWO INSTANCES OF THIS SCRIPT')}
+    importDataFromFile()
     EvaluateInventory()
 });
 
@@ -717,63 +721,92 @@ on('containerChanged', (event) => {
     if (event.oldContainer) {oldId = event.oldContainer.getFormID()}
     if (event.newContainer) {newId = event.newContainer.getFormID()}
     // if (ignoreFlag){ignoreFlag = false; return;}
+    if (itemId === 15){return;}
 
     // printConsole(`oldcontainer == ${ event.oldContainer.getFormID() }`)
     // printConsole(`newcontainer == ${ event.newContainer.getFormID() }`)
+
+
+    printConsole(`containerChanged Running::`)
     // Item added to player's inventory
-    if (newId == 20 && !ignoreFlag){
+    // ignore gold coming in and out
+    if (newId == 20 && !ignoreFlag && itemId != 15){
+        printConsole(`newId == 20::`)
 
         // check how many are in an item stack and if any are allowed to be picked up
         let allowedCount: number = (slot.baseSize - slot.currentSize) / volume 
+        if (allowedCount > num){allowedCount = num}
+        if (volume <= 0){allowedCount = num}
         let disallowedCount: number = num - allowedCount
 
-        // the slot is filled
-        if (allowedCount <= 1){ 
+        // if it is not a stack of items
+        if (num === 1){ 
+            printConsole(`num === 1::`)
+            // the slot is filled
             if (slot.currentSize + fullVolume > slot.baseSize ) {
+                printConsole(`Slot might be filled`)
 
                 // if the item was picked up from the world
                 if (!event.oldContainer){
                     DropItem(itemId, num)
-                    // printConsole('!event.oldContainer')
+                    printConsole('!event.oldContainer:: ')
                 }
 
                 // if the item was taken from a container
                 else {
-                    printConsole('Trying to deny selection')
-                    // Flat out prevent taking the item
-                    DenySelection(itemId, event.oldContainer, slot.name)
+                    printConsole('allowedcount === 1:: Trying to deny selection')
+                    if (Ui.isMenuOpen('BarterMenu')){
+                        DropItem(itemId, num)
+                    }
+                    else{
+                        // Flat out prevent taking the item
+                        DenySelection(itemId, disallowedCount,event.oldContainer, slot.name)
+                    }
                     // printConsole('event.oldContainer')
                 }
                 ignoreFlag = true 
                 
             }
             else {
+                printConsole(`num === 1:: additemtoslot`)
                 addItemtoSlot(itemId, num)
             }
         }
-        else if (allowedCount > 1){
+        // if it is a stack of items
+        else if (num > 1){
+            printConsole(`num > 1:: allowedcount:: ${allowedCount}\ndisallowedcount:: ${disallowedCount}\nvolume * num = ${volume} * ${allowedCount}`)
             addItemtoSlot(itemId, allowedCount);
             // removeItemfromSlot(itemId, disallowedCount)
             // if the item was picked up from the world
-            if (!event.oldContainer){
+            if (slot.currentSize + (volume * allowedCount) > slot.baseSize ){ 
+            if (!event.oldContainer && disallowedCount > 0){
                 DropItem(itemId, disallowedCount)
-                // printConsole('!event.oldContainer')
+                printConsole('!event.oldContainer:: disallowed count > 0::')
             }
 
             // if the item was taken from a container
-            else {
+            else if (disallowedCount){
                 // Check if it's possible to allow a few through, like arrows
-                printConsole('Trying to deny selection')
                 // Flat out prevent taking the item
-                DenySelection(itemId, event.oldContainer, slot.name)
+                if (Ui.isMenuOpen('BarterMenu')){
+                    printConsole('allowedCount > 1:: trying to drop item')
+                    DropItem(itemId, disallowedCount)
+                }
+                else{
+                    printConsole('allowedCount > 1:: Trying to deny selection')
+                    DenySelection(itemId, disallowedCount, event.oldContainer, slot.name)
+                }
                 // printConsole('event.oldContainer')
             }
             ignoreFlag = true 
-
+            printConsole(`allowedCount > 1:: IgnoreFlag:: ${ignoreFlag}`)
+            }
         }
     }
     // Item removed from player's inventory
-    else if (oldId == 20 && !ignoreFlag) {
+    else if (oldId == 20 && !ignoreFlag && itemId != 15) {
+        printConsole(`Remove:: IgnoreFlag:: ${ignoreFlag}`)
+        printConsole(`Removing ${itemId} with count ${num}`)
         removeItemfromSlot(itemId, num)
     }
     else {ignoreFlag = false}
@@ -786,6 +819,7 @@ on('crosshairRefChanged', (event) => {
     const id: number = event.reference?.getBaseObject()?.getFormID()
     const typeBlacklist: number[] = [FormType.Character, FormType.Activator, FormType.Door, FormType.Apparatus, FormType.Container, FormType.NPC, FormType.Flora, FormType.Tree]
     if (event.reference?.getBaseObject()?.isPlayable() && !typeBlacklist.includes(event.reference?.getBaseObject()?.getType())){
+            inventoryCurrentHighlighted.setAlpha(1)
             isFadein = true
             Slot.updateWidgets()
             Slot.fadeAllIn()
