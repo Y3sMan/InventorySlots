@@ -209,8 +209,41 @@ function SetIntSetting(changed_setting: string, slot: Slot) {
 function SetBoolSetting(changed_setting: string, slot: Slot) {
     let key: string = stringToSetting(changed_setting)
     let value: boolean = mcm.GetModSettingBool(modname, key)
-    if (key.includes('bAddSlot')){}
-    // SetIntValue(null, 'YM.Slots.' + key, mcm.GetModSettingBool(modname, key) ? 1:0)
+
+    if (changed_setting.includes('bAddSlot') || changed_setting.includes('DeleteSlot')){
+        mcm.SetModSettingBool(modname, changed_setting, false)
+
+        if (key.includes('bAddSlot')){
+            let newSlot: string = mcm.GetModSettingString(modname, 'sAddSlotName:Slots')
+            mcm.SetModSettingString(modname, 'sAddSlotName:Slots', 'Enter')
+            new Slot(newSlot, 50, GetBaseWidgetPos()[0], GetBaseWidgetPos()[1])
+        }
+        else if (key.includes('DeleteSlot')){
+            if (!slot){return;}
+            let oldSlot_name: string = mcm.GetModSettingString(modname, 'sActiveSlots:Slots')
+            let oldSlot: Slot = getSlotFromName(oldSlot_name)
+            let allSlots: Slot[] = Slot.getAllSlots()
+            let firstSlot: Slot = allSlots[0]
+
+            allSlots.splice(allSlots.indexOf(oldSlot), 1)
+
+            Object.values(categoryToSlot).forEach((s, i) => {
+                if (s === oldSlot){Object.values(categoryToSlot)[i] = firstSlot}
+            })
+           
+            // can't really delete the object
+            oldSlot.widget.setAlpha(0)
+            
+            Debug.messageBox(`Reverted ${oldSlot_name}'s assigned items to a default slot, ${firstSlot.name}`)
+        }
+    }
+    else if (changed_setting.includes('Reset')){
+        let data_json: string = 'data/skse/plugins/InventorySlots/Slots.json';
+        let original_data = {"volumes":{"RABInv_ItemType_WeaponArrow":1,"RABInv_ItemType_WeaponArrow_Equipped":1,"RABInv_ItemType_WeaponBolt":0.5,"RABInv_ItemType_WeaponBolt_Equipped":0.5,"RABInv_ItemType_Weapon1H":5,"RABInv_ItemType_Weapon1H_Equipped":5,"RABInv_ItemType_Weapon2H":10,"RABInv_ItemType_Weapon2H_Equipped":10,"RABInv_ItemType_WeaponDagger":2,"RABInv_ItemType_WeaponDagger_Equipped":2,"RABInv_ItemType_WeaponCrossBow":8,"RABInv_ItemType_WeaponCrossBow_Equipped":8,"RABInv_ItemType_WeaponBow":8,"RABInv_ItemType_WeaponBow_Equipped":8,"RABInv_ItemType_ArmorShield":9,"RABInv_ItemType_ArmorShield_Equipped":9,"RABInv_ItemType_ArmorCuirass":15,"RABInv_ItemType_ArmorCuirass_Equipped":15,"RABInv_ItemType_ArmorBoots":6,"RABInv_ItemType_ArmorBoots_Equipped":6,"RABInv_ItemType_ArmorHelmet":6,"RABInv_ItemType_ArmorHelmet_Equipped":6,"RABInv_ItemType_ArmorGauntlets":4,"RABInv_ItemType_ArmorGauntlets_Equipped":4,"RABInv_ItemType_Clothes":6,"RABInv_ItemType_Clothes_Equipped":6,"RABInv_ItemType_Jewelry":3,"RABInv_ItemType_Jewelry_Equipped":3,"RABInv_ItemType_BookScroll":2,"RABInv_ItemType_Food":1,"RABInv_ItemType_Potion":1,"RABInv_ItemType_Drink":2,"RABInv_ItemType_Ingredient":0.1,"RABInv_ItemType_Gem":1,"RABInv_ItemType_Soulgem":1,"RABInv_ItemType_Lockpick":0.5,"RABInv_ItemType_MiscLarge":5,"RABInv_ItemType_MiscMedium":3,"RABInv_ItemType_MiscSmall":0.1,"RABInv_ItemType_Gold":0,"RABInv_ItemType_OreIngot":2,"RABInv_ItemType_HidePelt":1},"slots":[{"name":"Misc","baseSize":200,"currentSize":0,"widget":{"index":2,"type":"undefined","owningMod":"InventorySlots","x":1500,"y":800},"items":[]},{"name":"Weapons","baseSize":20,"currentSize":0,"widget":{"index":3,"type":"undefined","owningMod":"InventorySlots","x":1500,"y":820},"items":[]},{"name":"Quiver","baseSize":60,"currentSize":0,"widget":{"index":4,"type":"undefined","owningMod":"InventorySlots","x":1500,"y":840},"items":[]},{"name":"Valuables","baseSize":50,"currentSize":0,"widget":{"index":5,"type":"undefined","owningMod":"InventorySlots","x":1500,"y":860},"items":[]},{"name":"Bottles","baseSize":10,"currentSize":0,"widget":{"index":6,"type":"undefined","owningMod":"InventorySlots","x":1500,"y":880},"items":[]}],"Category-to-Slots":[["RABInv_ItemType_WeaponArrow","Quiver"],["RABInv_ItemType_WeaponArrow_Equipped","Quiver"],["RABInv_ItemType_WeaponBolt","Quiver"],["RABInv_ItemType_WeaponBolt_Equipped","Quiver"],["RABInv_ItemType_Weapon1H","Weapons"],["RABInv_ItemType_Weapon1H_Equipped","Weapons"],["RABInv_ItemType_Weapon2H","Weapons"],["RABInv_ItemType_Weapon2H_Equipped","Weapons"],["RABInv_ItemType_WeaponDagger","Weapons"],["RABInv_ItemType_WeaponDagger_Equipped","Weapons"],["RABInv_ItemType_WeaponCrossBow","Weapons"],["RABInv_ItemType_WeaponCrossBow_Equipped","Weapons"],["RABInv_ItemType_WeaponBow","Weapons"],["RABInv_ItemType_WeaponBow_Equipped","Weapons"],["RABInv_ItemType_ArmorShield","Misc"],["RABInv_ItemType_ArmorShield_Equipped","Weapons"],["RABInv_ItemType_ArmorCuirass","Misc"],["RABInv_ItemType_ArmorCuirass_Equipped","Weapons"],["RABInv_ItemType_ArmorBoots","Misc"],["RABInv_ItemType_ArmorBoots_Equipped","Weapons"],["RABInv_ItemType_ArmorHelmet","Misc"],["RABInv_ItemType_ArmorHelmet_Equipped","Weapons"],["RABInv_ItemType_ArmorGauntlets","Misc"],["RABInv_ItemType_ArmorGauntlets_Equipped","Weapons"],["RABInv_ItemType_Clothes","Misc"],["RABInv_ItemType_Clothes_Equipped","Misc"],["RABInv_ItemType_Jewelry","Valuables"],["RABInv_ItemType_Jewelry_Equipped","Weapons"],["RABInv_ItemType_BookScroll","Misc"],["RABInv_ItemType_Food","Misc"],["RABInv_ItemType_Potion","Bottles"],["RABInv_ItemType_Drink","Bottles"],["RABInv_ItemType_Ingredient","Misc"],["RABInv_ItemType_Gem","Valuables"],["RABInv_ItemType_Soulgem","Valuables"],["RABInv_ItemType_Lockpick","Misc"],["RABInv_ItemType_MiscLarge","Misc"],["RABInv_ItemType_MiscMedium","Misc"],["RABInv_ItemType_MiscSmall","Misc"],["RABInv_ItemType_Gold","Valuables"],["RABInv_ItemType_OreIngot","Misc"],["RABInv_ItemType_HidePelt","Misc"]],"Current Item Widget Position":[950,800],"Base Widget Position":[1500,800]}
+        WriteToFile(data_json, JSON.stringify(original_data), false);
+        importDataFromFile()
+
+    }
 }
 
 function SetStringSetting(changed_setting: string, slot: Slot) {
