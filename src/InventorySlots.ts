@@ -24,6 +24,14 @@ const white: number[] = [1,1,1,1]
 destroyAllTexts()
 const inventoryCurrentHighlighted: wt.spText = new wt.spText(1500,y, 'currentItem', [1,1,1,0], undefined, 'InventorySlots')
 // ____________________FUNCTIONS___________________________________________
+
+let debugging: boolean = false 
+export function log(msg: string){
+    if (debugging){
+        printConsole(msg)
+    }
+}
+
 export function pl() { return Game.getPlayer(); }
 
 enum weapKwdIds {
