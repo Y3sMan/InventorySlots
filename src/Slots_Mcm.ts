@@ -260,6 +260,14 @@ function SetStringSetting(changed_setting: string, slot: Slot) {
         StringListRemove(null, storageKeys.menuWhiteList, value);
         categoryToSlot[value] = slot
     }
+
+function checkOrphanedCategories(){
+    let keys: string[] = Object.keys(categoryToSlot)
+    let orphans: string[] = []
+    Object.values(categoryToSlot).forEach((s, i) => {
+        if (!s){orphans.push(keys[i])}
+    })
+    return orphans
 }
 
 //__________EVENTS____________________________________________
