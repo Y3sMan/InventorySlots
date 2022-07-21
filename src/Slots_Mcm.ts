@@ -93,6 +93,12 @@ function FillMCMOptions () {
         StringListAdd(null, mcm_settings.SelectedSlot, name)
     });
 
+    // item category editing, second page
+    let volumes: number[] = Object.values(itemCategoryVolumes)
+    Object.keys(itemCategoryVolumes).forEach((c, i) => {
+        c = `f${c}:Categories`
+        mcm.SetModSettingFloat(modname, c, volumes[i])
+    })
 
     // // selecting a slot for each category, third page, setting each option to what's currently selected
     // let slots: Slot[] = Object.values(categoryToSlot)
