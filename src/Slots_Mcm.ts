@@ -93,6 +93,26 @@ function FillMCMOptions () {
         StringListAdd(null, mcm_settings.SelectedSlot, name)
     });
 
+
+    // // selecting a slot for each category, third page, setting each option to what's currently selected
+    // let slots: Slot[] = Object.values(categoryToSlot)
+    // Object.keys(categoryToSlot).forEach((c, i) => {
+    //     c = `s${c}:SlotAssignment`
+    //     let s: Slot = slots[i]
+    //     mcm.SetModSettingString(modname, c, s.name)
+    // })
+
+    // //  filling each category menu with slot names as options
+    // if (StringListCount(null, storageKeys.SlotAssignment) <= 0) { 
+    //     let slot_names: string[] = Slot.getAllSlotNames()
+    //     StringListClear(null, storageKeys.SlotAssignment)
+
+    //     slot_names.forEach(s => {
+    //         StringListAdd(null, storageKeys.SlotAssignment, s)
+    //     })
+    // }
+
+    // hide all group one mcm settings until a slot is chosen from sActiveSlot, the mcm option
     HideGroupOne(true)
 	// SetMenuOptions()
 	// RefreshMCM()
