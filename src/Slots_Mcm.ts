@@ -285,6 +285,11 @@ export let mainMcm  = ()  => {
 
     hooks.sendPapyrusEvent.add({
         enter(ctx) {
+            // Check if any item categories are unassigned
+            let emptyCat: string[] = checkOrphanedCategories()
+            if (emptyCat.length != 0){
+                Debug.messageBox(`The following categories need an assigned slot: ${JSON.stringify(emptyCat)}`)
+            }
             EvaluateInventory()
             saveToDataFile()
             Slot.updateWidgets()
