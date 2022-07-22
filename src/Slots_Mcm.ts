@@ -2,7 +2,7 @@ import {on, once, hooks, printConsole, Game, Form, Debug, Key, PlayerPositionEve
 import { FormListToArray, GetStringValue, SetFloatValue, SetIntValue, SetStringValue, StringListAdd, StringListClear, StringListCopy, StringListCount, StringListRemove, StringListToArray } from "@skyrim-platform/papyrus-util/StorageUtil";
 import * as mcm from "@skyrim-platform/mcm-helper/MCM"
 import { ModEvent } from "./modevent";
-import { getSlotFromName, ItemCategories,  Slot, saveToDataFile, importDataFromFile, categoryToSlot, itemCategoryVolumes, EvaluateInventory, inventoryCurrentHighlighted, setBaseWidgetPos, GetBaseWidgetPos, Misc_slot } from "./InventorySlots";
+import { getSlotFromName, ItemCategories,  Slot, saveToDataFile, importDataFromFile, categoryToSlot, itemCategoryVolumes, EvaluateInventory, inventoryCurrentHighlighted, setBaseWidgetPos, GetBaseWidgetPos } from "./InventorySlots";
 import { JsonExists } from '@skyrim-platform/papyrus-util/JsonUtil';
 import { WriteToFile } from '@skyrim-platform/papyrus-util/MiscUtil';
 
@@ -29,10 +29,6 @@ let storageKeys = {
     menuBlackList: 'YM.Slots.MCM.Menu.Categories.BlackList',
     SlotAssignment: 'YM.SLOTS.MCM.MENU.CATEGORIES.SLOT_CHOICES'
 
-}
-
-let mcmSettingsToStorageKeys = {
-    // `YM.Slots.${s.name}.fSlotMax:Slots`
 }
 
 let modname: string = 'InventorySlots'
@@ -253,7 +249,7 @@ function SetStringSetting(changed_setting: string, slot: Slot) {
     if (key.includes('CategoriesRemove')){
         StringListAdd(null, storageKeys.menuWhiteList, value);
         StringListRemove(null, storageKeys.menuBlackList, value);
-        categoryToSlot[value] = null // sets to the default slot 'Misc_slot'
+        categoryToSlot[value] = Slot.getAllSlots()[0]   // sets to the default slot 'Misc_slot'
     }
     else if (key.includes('CategoriesAdd')){
         StringListAdd(null, storageKeys.menuBlackList, value);

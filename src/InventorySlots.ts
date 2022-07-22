@@ -1,15 +1,15 @@
-import { once, on, Form, Keyword, Game, Utility, printConsole, MiscObject, ObjectReference, browser, destroyAllTexts, hooks, Debug, Actor, FormType, Potion, EventHandle, unsubscribe, settings, SlotType  } from  'skyrimPlatform';
-import * as su from '@skyrim-platform/papyrus-util/StorageUtil'
+import { once, on, Form, Keyword, Game, Utility, printConsole, ObjectReference, browser, Debug, FormType, Ui, unsubscribe  } from  '@skyrim-platform/skyrim-platform';
 import { WriteToFile, ReadFromFile, FileExists } from "@skyrim-platform/papyrus-util/MiscUtil";
-import * as ju from '@skyrim-platform/papyrus-util/JsonUtil'
 import {ModEvent} from './modevent'
 import * as wt from '../../modules/SPTextUtils/spTextUtils'
-import { Ui } from '@skyrim-platform/skyrim-platform';
-import {AddAllItemsToArray} from '@skyrim-platform/po3-papyrus-extender/PO3_SKSEFunctions'
+import {AddAllItemsToArray, IsPluginFound } from '../node_modules/@skyrim-platform/po3-papyrus-extender/PO3_SKSEFunctions'
 import { mainMcm } from "./Slots_Mcm";
 
 // script check
 once('update', () => {
+    // check if plugin is active
+    if (!IsPluginFound('InventorySlots.esp')){Debug.messageBox('The InventorySlots.esp is not active. Please quit the game and enable or reinstall it.')}
+
     const checkScriptNumbers = function (name: string) {
             if (FileExists(`data/platform/plugins/${name}`) && FileExists(`data/platform/pluginsdev/${name}`)){printConsole('ABORT TESTING. THERE ARE TWO INSTANCES OF THIS SCRIPT')}
     }
@@ -59,7 +59,8 @@ enum weapKwdIds {
 	WeapTypeSword = 124689,
 	// WeapTypeUnique = 1363610,
 	WeapTypeWarAxe = 124690,
-	WeapTypeWarhammer = 448816
+	WeapTypeWarhammer = 448816,
+	VendorItemArrow = 595943
 }
 
 enum armorKwdIds {
@@ -78,7 +79,6 @@ enum miscKwdIds {
 	VendorItemAnimalHide = 595178,
 	VendorItemAnimalPart = 595179,
 	// VendorItemArmor = 588121,
-	VendorItemArrow = 595943,
 	// VendorItemClothing = 588123,
 	VendorItemClutter = 595177,
 	VendorItemDaedricArtifact = 595944,
@@ -207,48 +207,50 @@ export let itemCategoryVolumes = {
 }
 
 let keywordToCategory = {
-// weapons
-448818 : ItemCategories.RABInv_ItemType_Weapon2H,
-124693 : ItemCategories.RABInv_ItemType_WeaponBow,
-124691 : ItemCategories.RABInv_ItemType_Weapon1H,
-448817 : ItemCategories.RABInv_ItemType_Weapon2H,
-124692 : ItemCategories.RABInv_ItemType_Weapon1H,
-124694 : ItemCategories.RABInv_ItemType_Weapon1H,
-124689 : ItemCategories.RABInv_ItemType_Weapon1H,
-124690 : ItemCategories.RABInv_ItemType_Weapon1H,
-448816 : ItemCategories.RABInv_ItemType_Weapon2H,
-595943 : ItemCategories.RABInv_ItemType_WeaponArrow,
-
+// weapons	
+WeapTypeBattleaxe : ItemCategories.RABInv_ItemType_Weapon2H,
+WeapTypeBow : ItemCategories.RABInv_ItemType_WeaponBow,
+WeapTypeDagger : ItemCategories.RABInv_ItemType_Weapon1H,
+WeapTypeGreatsword: ItemCategories.RABInv_ItemType_Weapon2H,
+WeapTypeMace : ItemCategories.RABInv_ItemType_Weapon1H,
+WeapTypeStaff : ItemCategories.RABInv_ItemType_Weapon1H,
+WeapTypeSword : ItemCategories.RABInv_ItemType_Weapon1H,
+WeapTypeWarAxe : ItemCategories.RABInv_ItemType_Weapon1H,
+WeapTypeWarhammer : ItemCategories.RABInv_ItemType_Weapon2H,
+VendorItemArrow: ItemCategories.RABInv_ItemType_WeaponArrow,
+	
 // armors
-442605 : ItemCategories.RABInv_ItemType_ArmorBoots,
-441320 : ItemCategories.RABInv_ItemType_Clothes,
-442604 : ItemCategories.RABInv_ItemType_ArmorCuirass,
-442607 : ItemCategories.RABInv_ItemType_ArmorGauntlets,
-442606 : ItemCategories.RABInv_ItemType_ArmorHelmet,
-441321 : ItemCategories.RABInv_ItemType_Jewelry,
-615858 : ItemCategories.RABInv_ItemType_ArmorShield,
+ArmorBoots  : ItemCategories.RABInv_ItemType_ArmorBoots,
+ArmorClothing  : ItemCategories.RABInv_ItemType_Clothes,
+ArmorCuirass  : ItemCategories.RABInv_ItemType_ArmorCuirass,
+ArmorGauntlets : ItemCategories.RABInv_ItemType_ArmorGauntlets,
+ArmorHelmet  : ItemCategories.RABInv_ItemType_ArmorHelmet,
+ArmorJewelry  : ItemCategories.RABInv_ItemType_Jewelry,
+ArmorShield  : ItemCategories.RABInv_ItemType_ArmorShield,
 
-// Miscs
-595178 : ItemCategories.RABInv_ItemType_HidePelt,
-595179 : ItemCategories.RABInv_ItemType_Food,
-595177 : ItemCategories.RABInv_ItemType_MiscSmall,
-781527 : ItemCategories.RABInv_ItemType_MiscMedium,
-577002 : ItemCategories.RABInv_ItemType_Food,
-659030 : ItemCategories.RABInv_ItemType_Food,
-595181 : ItemCategories.RABInv_ItemType_Gem,
-577003 : ItemCategories.RABInv_ItemType_Ingredient,
-588122 : ItemCategories.RABInv_ItemType_Jewelry,
-595180 : ItemCategories.RABInv_ItemType_OreIngot,
-577005 : ItemCategories.RABInv_ItemType_Potion,
-577004 : ItemCategories.RABInv_ItemType_Potion,
-1006768 : ItemCategories.RABInv_ItemType_BookScroll,
-659031 : ItemCategories.RABInv_ItemType_BookScroll,
-604067 : ItemCategories.RABInv_ItemType_Soulgem,
-604069 : ItemCategories.RABInv_ItemType_BookScroll,
-604066 : ItemCategories.RABInv_ItemType_BookScroll,
-604068 : ItemCategories.RABInv_ItemType_Weapon1H,
-595182 : ItemCategories.RABInv_ItemType_MiscSmall,
+// Miscs	
+VendorItemAnimalHide: ItemCategories.RABInv_ItemType_HidePelt,
+VendorItemAnimalPart: ItemCategories.RABInv_ItemType_Food,
+VendorItemClutter : ItemCategories.RABInv_ItemType_MiscSmall,
+VendorItemFireword : ItemCategories.RABInv_ItemType_MiscMedium,
+VendorItemFood : ItemCategories.RABInv_ItemType_Food,
+VendorItemFoodRaw : ItemCategories.RABInv_ItemType_Food,
+VendorItemGem : ItemCategories.RABInv_ItemType_Gem,
+VendorItemIngredient: ItemCategories.RABInv_ItemType_Ingredient,
+VendorItemJewelry : ItemCategories.RABInv_ItemType_Jewelry,
+VendorItemOreIngot : ItemCategories.RABInv_ItemType_OreIngot,
+VendorItemPoison : ItemCategories.RABInv_ItemType_Potion,
+VendorItemPotion  : ItemCategories.RABInv_ItemType_Potion,
+VendorItemRecipe  : ItemCategories.RABInv_ItemType_BookScroll,
+VendorItemScroll : ItemCategories.RABInv_ItemType_BookScroll,
+VendorItemSoulGem : ItemCategories.RABInv_ItemType_Soulgem,
+VendorItemSpellTome : ItemCategories.RABInv_ItemType_BookScroll,
+VendorItemBook : ItemCategories.RABInv_ItemType_BookScroll,
+VendorItemStaff : ItemCategories.RABInv_ItemType_Weapon1H,
+VendorItemTool  : ItemCategories.RABInv_ItemType_MiscSmall,
 }
+
+import * as sp from 'skyrimPlatform'
 
 function determineItemCategory(item: number){
     const f: Form = Game.getFormEx(item)
@@ -261,9 +263,10 @@ function determineItemCategory(item: number){
 	for (let i = 0; i < kyds?.length; i++) {
 		const k = kyds[i];
 		const f: number = Form.from(k)!.getFormID()
-        if (Object.keys(keywordToCategory).includes(`${f}`)) {
+        const editorid: string = (sp as any).PO3_SKSEFunctions.GetFormEditorID(Game.getFormEx(f))
+        if (Object.keys(keywordToCategory).includes(`${editorid}`)) {
             // @ts-ignore
-            key = keywordToCategory[f];
+            key = keywordToCategory[editorid];
             if (isEquipped){key += 1; if (key > 27){key = 0}}
 
             // log(`determineItemCategory:: the key is ${key}`)
@@ -273,15 +276,16 @@ function determineItemCategory(item: number){
         }
         else {continue}
 	}
-    if (key == -1){return 0;}
+    if (key == -1){return -1;}
 }
 
 function determineItemVolume(item: number): number{
-    const category: number = determineItemCategory(item)
-    const vol: number = Object.values(itemCategoryVolumes)[category]
-    // log(`determineItemVolume:: the vol is ${vol}`)
-    if (!vol){return 0}
-    return vol
+    const category: number = determineItemCategory(item);
+    if (category === -1){return 0;};
+    const vol: number = Object.values(itemCategoryVolumes)[category];
+    // log(`determineItemVolume:: the vol is ${vol}`);
+    if (!vol){return 0};
+    return vol;
 }
 
 let BaseSlots: Slot[] = []
@@ -600,23 +604,35 @@ function getHighlightedItemCount(){
 
 // _____________________________ JSON file functions __________________________________
 
+function checkFilesExist(){
+    if (!FileExists('data/skse/plugins/InventorySlots/Slots.json')){ WriteToFile('data/skse/plugins/InventorySlots/Slots.json',JSON.stringify({}) , true) }
+    if (!FileExists('data/skse/plugins/InventorySlots/Keywords.json')){ WriteToFile('data/skse/plugins/InventorySlots/Keywords.json', JSON.stringify({}), true) }
+    let file1: string = 'data/skse/plugins/InventorySlots/Keywords.json'
+    let file2: string = 'data/skse/plugins/InventorySlots/Slots.json'
+    let file_contents1: string = ReadFromFile(file1)
+    let file_contents2: string = ReadFromFile(file2)
+    printConsole(file_contents1.length)
+    if (file_contents1.length <= 2){ 
+        WriteToFile(file1, JSON.stringify({}), false);
+        saveKeywordCategoriesToDataFile()
+    }
+    if (file_contents2.length <= 2){ 
+        WriteToFile(file2, JSON.stringify({}), false);
+        saveToDataFile() 
+    }
+}
+
 export function saveToDataFile(){
     let data_json: string = 'data/skse/plugins/InventorySlots/Slots.json' 
-    // Check if json file exists, and create one if otherwise
-    if (!FileExists(data_json)){ WriteToFile(data_json, JSON.stringify({}), false) }
-    let oldFile: string = ReadFromFile(data_json)
-    // If the file is empty, like after just being created or something, give it the initial {} 'squacket' things
-    if (oldFile.length == 0){ WriteToFile(data_json, JSON.stringify({}), false); saveToDataFile() }
-    let innerDict =  JSON.parse(oldFile) 
-    innerDict['volumes'] = itemCategoryVolumes
-    innerDict['slots'] = Slot.getAllSlots() 
 
-    // overwrite each slot's widget's private position variables with its actual position 
-    innerDict['slots'].forEach((s, i) => {
-        let w: wt.spText = s.widget;
-        innerDict['slots'][i]['widget']['x'] = s.widget.getPosition()[0]
-        innerDict['slots'][i]['widget']['y'] = s.widget.getPosition()[1]
-    });
+    let innerDict = {
+        'volumes': {},
+        'Category-to-Slots': {},
+        'slots': {},
+        'Current Item Widget Position': {},
+        'Base Widget Position': {},
+    }
+    innerDict['volumes'] = itemCategoryVolumes
 
     let slotNames: string[][] = []
     let catNames: string[] = Object.keys(categoryToSlot)
@@ -625,8 +641,19 @@ export function saveToDataFile(){
         let cat: string = catNames[i]
         slotNames.push([cat, name])
     });
-
     innerDict['Category-to-Slots'] = slotNames  
+
+    innerDict['slots'] = Slot.getAllSlots() 
+
+    // overwrite each slot's widget's private position variables with its actual position 
+    innerDict['slots'].forEach((s: Slot, i: number) => {
+        let w: wt.spText = s.widget;
+        innerDict['slots'][i]['widget']['x'] = s.widget.getPosition()[0]
+        innerDict['slots'][i]['widget']['y'] = s.widget.getPosition()[1]
+    });
+
+    
+
     innerDict['Current Item Widget Position'] = inventoryCurrentHighlighted.getPosition()
     innerDict['Base Widget Position'] = GetBaseWidgetPos()
 
@@ -634,12 +661,46 @@ export function saveToDataFile(){
     WriteToFile(data_json, JSON.stringify(innerDict), false)
 }
 
-function importFile(){
+function saveKeywordCategoriesToDataFile(){
+    let data_json: string = 'data/skse/plugins/InventorySlots/Keywords.json' 
+
+    // Check if json file exists, and create one if otherwise
+    // if (!FileExists(data_json)){ WriteToFile(data_json, JSON.stringify({}), false) }
+    // let oldFile: string = ReadFromFile(data_json)
+
+    // If the file is empty, like after just being created or something, give it the initial {} 'squacket' things
+    // if (oldFile.length == 0){ WriteToFile(data_json, JSON.stringify({}), false); saveKeywordCategoriesToDataFile() }
+
+    // let keywords_categories =  JSON.parse(oldFile) 
+    let keywords_categories = {
+        keywords: {}
+    } 
+
+    // compatability file. Player can manipulate keyword list to add/remove support for certain items
+    keywords_categories['keywords'] = keywordToCategory
+
+    WriteToFile(data_json, JSON.stringify(keywords_categories), false)
+}
+
+function importDataFile(){
     let data_json: string = 'data/skse/plugins/InventorySlots/Slots.json' 
     if (!FileExists(data_json)){ WriteToFile(data_json, JSON.stringify({}), false) }
     let oldFile: string = ReadFromFile(data_json)
     if (oldFile.length == 0){ WriteToFile(data_json, JSON.stringify({}), false); saveToDataFile() }
     else { return JSON.parse(oldFile)}
+}
+
+function importKeywordFile(){
+    let data_json: string = 'data/skse/plugins/InventorySlots/Keywords.json' 
+    if (!FileExists(data_json)){ WriteToFile(data_json, JSON.stringify({}), false) }
+    let oldFile: string = ReadFromFile(data_json)
+    if (oldFile.length == 0){ WriteToFile(data_json, JSON.stringify({}), false); saveKeywordCategoriesToDataFile() }
+    else { return JSON.parse(oldFile)}
+}
+
+function importKeywordandCategories(){
+    let file = importKeywordFile()
+    keywordToCategory = file
 }
 
 export function getSlotFromName(name: string): Slot | undefined{
@@ -653,7 +714,7 @@ export function getSlotFromName(name: string): Slot | undefined{
 }
 
 function importSlotsfromFile(){
-    let slot_info = importFile()['slots']
+    let slot_info = importDataFile()['slots']
     let names = []
     slot_info.forEach(s => {
         let name: string = s['name']
@@ -691,7 +752,7 @@ function importSlotsfromFile(){
 }
 
 function importCategoriesfromFile(){
-    let cats_slots = importFile()['Category-to-Slots']
+    let cats_slots = importDataFile()['Category-to-Slots']
     cats_slots.forEach(cat_slot => {
         let cat: string = cat_slot[0]
         let slot_name: string = cat_slot[1]
@@ -702,26 +763,29 @@ function importCategoriesfromFile(){
 }
 
 function importCategoryVolumesfromFile(){
-    let vols = importFile()['volumes']
-    let newVolumes: number[] = Object.values(vols)
-    Object.keys(vols).forEach((v, i) => {
-       let volume: number = newVolumes[i];
-       itemCategoryVolumes[v] = volume
-    });
+    let vols = importDataFile()['volumes']
+    // let newVolumes: number[] = Object.values(vols)
+    // Object.keys(vols).forEach((v, i) => {
+    //    let volume: number = newVolumes[i];
+    //    itemCategoryVolumes[v] = volume
+    // });
+    itemCategoryVolumes = vols
 
 }
 
 function importInventoryWidgetPositionfromFile(){
-    let xy: number[] = importFile()['Current Item Widget Position']
+    let xy: number[] = importDataFile()['Current Item Widget Position']
     inventoryCurrentHighlighted.setPosition(xy[0], xy[1])
 }
 
 function importBaseWidgetPosfromFile(){
-    let xy: number[] = importFile()['Base Widget Position']
+    let xy: number[] = importDataFile()['Base Widget Position']
     setBaseWidgetPos(xy)
 }
 
 export function importDataFromFile(){
+    checkFilesExist()
+    // importKeywordandCategories()
     importCategoryVolumesfromFile()
     importCategoriesfromFile()
     importSlotsfromFile()
@@ -732,9 +796,8 @@ export function importDataFromFile(){
 //____________________________________EVENTS______________________________________________
 
 // mcm script
-mainMcm()
+// mainMcm()
 
-const eventBlacklist: string[] = [ 'YM_OnSelect_selectPress', 'YM_OnHighlight_selectHighlight' ]
 
 let handle
 on('menuOpen', (event) => {
@@ -772,153 +835,154 @@ on('menuClose', (event) => {
 
 once('update', () => {
 
-    // log(Object.values(importFile()['volumes'])[ItemCategories.RABInv_ItemType_ArmorGauntlets])
+    // log(Object.values(importDataFile()['volumes'])[ItemCategories.RABInv_ItemType_ArmorGauntlets])
     // importSlotsfromFile()
     // saveToDataFile()
     if (FileExists('data/platform/plugins/InventorySlots.js') && FileExists('data/platform/pluginsdev/InventorySlots.js')){log('ABORT TESTING. THERE ARE TWO INSTANCES OF THIS SCRIPT')}
-    importDataFromFile()
+    // importDataFromFile()
+    checkFilesExist()
     EvaluateInventory()
 });
 
-on('containerChanged', (event) => {
-	let action: string = 'Picked Up'
-	var newId: number = -1
-	var oldId: number = -1
-	const itemId: number = event.baseObj.getFormID()
-	const num: number = event.numItems
-    const info: [number, Slot] = solveIncomingItemInfo(event.baseObj.getFormID())
-    const volume: number = info[0] 
-    const fullVolume: number = volume * num
-    const slot: Slot = info[1]
-    if (event.oldContainer) {oldId = event.oldContainer.getFormID()}
-    if (event.newContainer) {newId = event.newContainer.getFormID()}
-    // if (ignoreContainerChangedEvent){ignoreContainerChangedEvent = false; return;}
-    if (itemId === 15){return;}
+// on('containerChanged', (event) => {
+// 	let action: string = 'Picked Up'
+// 	var newId: number = -1
+// 	var oldId: number = -1
+// 	const itemId: number = event.baseObj.getFormID()
+// 	const num: number = event.numItems
+//     const info: [number, Slot] = solveIncomingItemInfo(event.baseObj.getFormID())
+//     const volume: number = info[0] 
+//     const fullVolume: number = volume * num
+//     const slot: Slot = info[1]
+//     if (event.oldContainer) {oldId = event.oldContainer.getFormID()}
+//     if (event.newContainer) {newId = event.newContainer.getFormID()}
+//     // if (ignoreContainerChangedEvent){ignoreContainerChangedEvent = false; return;}
+//     if (itemId === 15){return;}
 
-    // log(`oldcontainer == ${ event.oldContainer.getFormID() }`)
-    // log(`newcontainer == ${ event.newContainer.getFormID() }`)
+//     // log(`oldcontainer == ${ event.oldContainer.getFormID() }`)
+//     // log(`newcontainer == ${ event.newContainer.getFormID() }`)
 
 
-    log(`containerChanged Running::`)
-    log(`containerChanged Running:: IgnoreFlag:: ${ignoreContainerChangedEvent}`)
-    // Item added to player's inventory
-    // ignore gold coming in and out
-    if (newId == 20 && !ignoreContainerChangedEvent && itemId != 15){
-        log(`newId == 20::`)
+//     log(`containerChanged Running::`)
+//     log(`containerChanged Running:: IgnoreFlag:: ${ignoreContainerChangedEvent}`)
+//     // Item added to player's inventory
+//     // ignore gold coming in and out
+//     if (newId == 20 && !ignoreContainerChangedEvent && itemId != 15){
+//         log(`newId == 20::`)
 
-        // check how many are in an item stack and if any are allowed to be picked up
-        let allowedCount: number = (slot.baseSize - slot.currentSize) / volume 
-        if (allowedCount > num){allowedCount = num}
-        if (volume <= 0){allowedCount = num}
-        let disallowedCount: number = num - allowedCount
+//         // check how many are in an item stack and if any are allowed to be picked up
+//         let allowedCount: number = (slot.baseSize - slot.currentSize) / volume 
+//         if (allowedCount > num){allowedCount = num}
+//         if (volume <= 0){allowedCount = num}
+//         let disallowedCount: number = num - allowedCount
 
-        // if it is not a stack of items
-        if (num === 1){ 
-            log(`num === 1::`)
-            // the slot is filled
-            if (slot.currentSize + fullVolume > slot.baseSize ) {
-                log(`Slot might be filled`)
+//         // if it is not a stack of items
+//         if (num === 1){ 
+//             log(`num === 1::`)
+//             // the slot is filled
+//             if (slot.currentSize + fullVolume > slot.baseSize ) {
+//                 log(`Slot might be filled`)
 
-                // if the item was picked up from the world
-                if (!event.oldContainer){
-                    DropItem(itemId, num)
-                    log('!event.oldContainer:: ')
-                }
+//                 // if the item was picked up from the world
+//                 if (!event.oldContainer){
+//                     DropItem(itemId, num)
+//                     log('!event.oldContainer:: ')
+//                 }
 
-                // if the item was taken from a container
-                else {
-                    log('allowedcount === 1:: Trying to deny selection')
-                    if (Ui.isMenuOpen('BarterMenu')){
-                        DropItem(itemId, num)
-                    }
-                    else{
-                        // Flat out prevent taking the item
-                        DenySelection(itemId, disallowedCount,event.oldContainer, slot.name)
-                    }
-                    log('event.oldContainer')
-                }
-                // ignoreContainerChangedEvent = true 
+//                 // if the item was taken from a container
+//                 else {
+//                     log('allowedcount === 1:: Trying to deny selection')
+//                     if (Ui.isMenuOpen('BarterMenu')){
+//                         DropItem(itemId, num)
+//                     }
+//                     else{
+//                         // Flat out prevent taking the item
+//                         DenySelection(itemId, disallowedCount,event.oldContainer, slot.name)
+//                     }
+//                     log('event.oldContainer')
+//                 }
+//                 // ignoreContainerChangedEvent = true 
                 
-            }
-            else {
-                log(`num === 1:: additemtoslot`)
-                addItemtoSlot(itemId, num)
-            }
-        }
-        // if it is a stack of items
-        else if (num > 1){
-            log(`\nnum > 1:: allowedcount:: ${allowedCount}\ndisallowedcount:: ${disallowedCount}\nvolume * num = ${volume} * ${allowedCount}`)
-            addItemtoSlot(itemId, allowedCount);
-            // removeItemfromSlot(itemId, disallowedCount)
-            // if the item was picked up from the world
-            if (slot.currentSize + (volume * allowedCount) >= slot.baseSize ){ 
+//             }
+//             else {
+//                 log(`num === 1:: additemtoslot`)
+//                 addItemtoSlot(itemId, num)
+//             }
+//         }
+//         // if it is a stack of items
+//         else if (num > 1){
+//             log(`\nnum > 1:: allowedcount:: ${allowedCount}\ndisallowedcount:: ${disallowedCount}\nvolume * num = ${volume} * ${allowedCount}`)
+//             addItemtoSlot(itemId, allowedCount);
+//             // removeItemfromSlot(itemId, disallowedCount)
+//             // if the item was picked up from the world
+//             if (slot.currentSize + (volume * allowedCount) >= slot.baseSize ){ 
 
-                if (!event.oldContainer && disallowedCount > 0){
-                    DropItem(itemId, disallowedCount)
-                    log('!event.oldContainer:: disallowed count > 0::')
-                }
+//                 if (!event.oldContainer && disallowedCount > 0){
+//                     DropItem(itemId, disallowedCount)
+//                     log('!event.oldContainer:: disallowed count > 0::')
+//                 }
 
-                // if the item was taken from a container
-                else if (disallowedCount){
-                    // Check if it's possible to allow a few through, like arrows
-                    // Flat out prevent taking the item
-                    if (Ui.isMenuOpen('BarterMenu')){
-                        log('allowedCount > 1:: trying to drop item')
-                        DropItem(itemId, disallowedCount)
-                    }
-                    else{
-                        log('allowedCount > 1:: Trying to deny selection')
-                        DenySelection(itemId, disallowedCount, event.oldContainer, slot.name)
-                    }
-                    log('event.oldContainer')
-                }
-                // ignoreContainerChangedEvent = true 
-                log(`allowedCount > 1:: IgnoreFlag:: ${ignoreContainerChangedEvent}`)
+//                 // if the item was taken from a container
+//                 else if (disallowedCount){
+//                     // Check if it's possible to allow a few through, like arrows
+//                     // Flat out prevent taking the item
+//                     if (Ui.isMenuOpen('BarterMenu')){
+//                         log('allowedCount > 1:: trying to drop item')
+//                         DropItem(itemId, disallowedCount)
+//                     }
+//                     else{
+//                         log('allowedCount > 1:: Trying to deny selection')
+//                         DenySelection(itemId, disallowedCount, event.oldContainer, slot.name)
+//                     }
+//                     log('event.oldContainer')
+//                 }
+//                 // ignoreContainerChangedEvent = true 
+//                 log(`allowedCount > 1:: IgnoreFlag:: ${ignoreContainerChangedEvent}`)
 
-            }
-        }
-    }
-    // Item removed from player's inventory
-    else if (oldId == 20 && !ignoreContainerChangedEvent && itemId != 15) {
-        log(`Remove:: IgnoreFlag:: ${ignoreContainerChangedEvent}`)
-        log(`Removing ${itemId} with count ${num}`)
-        removeItemfromSlot(itemId, num)
-    }
-    else {ignoreContainerChangedEvent = false}
-    if (slot.currentSize <= 0) {slot.currentSize = 0}
-});
+//             }
+//         }
+//     }
+//     // Item removed from player's inventory
+//     else if (oldId == 20 && !ignoreContainerChangedEvent && itemId != 15) {
+//         log(`Remove:: IgnoreFlag:: ${ignoreContainerChangedEvent}`)
+//         log(`Removing ${itemId} with count ${num}`)
+//         removeItemfromSlot(itemId, num)
+//     }
+//     else {ignoreContainerChangedEvent = false}
+//     if (slot.currentSize <= 0) {slot.currentSize = 0}
+// });
 
-let isFadein: boolean = false
-on('crosshairRefChanged', (event) => {
-    const id: number = event.reference?.getBaseObject()?.getFormID()
-    const typeBlacklist: number[] = [FormType.Character, FormType.Activator, FormType.Door, FormType.Apparatus, FormType.Container, FormType.NPC, FormType.Flora, FormType.Tree]
-    if (event.reference?.getBaseObject()?.isPlayable() && !typeBlacklist.includes(event.reference?.getBaseObject()?.getType())){
-            inventoryCurrentHighlighted.setAlpha(1)
-            isFadein = true
-            Slot.updateWidgets()
-            Slot.fadeAllIn()
-            slotLookatItem(id)
-    }
-    else {isFadein = false; waitFadeOut()}
-});
+// let isFadein: boolean = false
+// on('crosshairRefChanged', (event) => {
+//     const id: number = event.reference?.getBaseObject()?.getFormID()
+//     const typeBlacklist: number[] = [FormType.Character, FormType.Activator, FormType.Door, FormType.Apparatus, FormType.Container, FormType.NPC, FormType.Flora, FormType.Tree]
+//     if (event.reference?.getBaseObject()?.isPlayable() && !typeBlacklist.includes(event.reference?.getBaseObject()?.getType())){
+//             inventoryCurrentHighlighted.setAlpha(1)
+//             isFadein = true
+//             Slot.updateWidgets()
+//             Slot.fadeAllIn()
+//             slotLookatItem(id)
+//     }
+//     else {isFadein = false; waitFadeOut()}
+// });
 
-on('equip', (event) => {
-    if (event.actor.getBaseObject()?.getFormID() != pl()?.getBaseObject()?.getFormID()){return;}
-    // log(event.baseObj.getName())
-    if (Ui.isMenuOpen('MagicMenu')) {return;}
-    const item: number = event.baseObj.getFormID()
-    // log(`equip:: isEquipped:: ${pl()?.isEquipped(event.baseObj)}`)
-    const oldCat: Slot = determineItemCategory(item)
-    removeItemfromSlot(item, 1)
-    addItemtoSlot(item, 1)
-});
+// on('equip', (event) => {
+//     if (event.actor.getBaseObject()?.getFormID() != pl()?.getBaseObject()?.getFormID()){return;}
+//     // log(event.baseObj.getName())
+//     if (Ui.isMenuOpen('MagicMenu')) {return;}
+//     const item: number = event.baseObj.getFormID()
+//     // log(`equip:: isEquipped:: ${pl()?.isEquipped(event.baseObj)}`)
+//     const oldCat: Slot = determineItemCategory(item)
+//     removeItemfromSlot(item, 1)
+//     addItemtoSlot(item, 1)
+// });
 
-on('unequip', (event) => {
-    if (event.actor.getBaseObject()?.getFormID() != pl()?.getBaseObject()?.getFormID()){return;}
-    // log(event.baseObj.getName())
-    if (Ui.isMenuOpen('MagicMenu')) {return;}
-    const item: number = event.baseObj.getFormID()
-    // log(`unequip:: isEquipped:: ${pl()?.isEquipped(event.baseObj)}`)
-    removeItemfromSlot(item, 1)
-    addItemtoSlot(item, 1)
-});
+// on('unequip', (event) => {
+//     if (event.actor.getBaseObject()?.getFormID() != pl()?.getBaseObject()?.getFormID()){return;}
+//     // log(event.baseObj.getName())
+//     if (Ui.isMenuOpen('MagicMenu')) {return;}
+//     const item: number = event.baseObj.getFormID()
+//     // log(`unequip:: isEquipped:: ${pl()?.isEquipped(event.baseObj)}`)
+//     removeItemfromSlot(item, 1)
+//     addItemtoSlot(item, 1)
+// });
