@@ -5,7 +5,7 @@ import * as ju from '@skyrim-platform/papyrus-util/JsonUtil'
 import {ModEvent} from './modevent'
 import * as wt from '../../modules/SPTextUtils/spTextUtils'
 import { Ui } from '@skyrim-platform/skyrim-platform';
-import {AddAllItemsToArray} from '@skyrim-platform/po3-papyrus-extender/PO3_SKSEFunctions'
+import {AddAllItemsToArray, GetFormEditorID} from '@skyrim-platform/po3-papyrus-extender/PO3_SKSEFunctions'
 import { mainMcm } from "./Slots_Mcm";
 
 // script check
@@ -22,8 +22,8 @@ browser.setVisible(true)
 let widget_x: number = 1500
 let widget_y: number = 800
 const white: number[] = [1,1,1,1]
-// destroyAllTexts()
-wt.spText.destroyAllModTexts(modname)
+destroyAllTexts()
+// wt.spText.destroyAllModTexts(modname)
 export const inventoryCurrentHighlighted: wt.spText = new wt.spText(950, widget_y, 'currentItem', [1,1,1,0], undefined, modname)
 
 // ____________________FUNCTIONS___________________________________________
@@ -207,47 +207,47 @@ export let itemCategoryVolumes = {
 }
 
 let keywordToCategory = {
-// weapons
-448818 : ItemCategories.RABInv_ItemType_Weapon2H,
-124693 : ItemCategories.RABInv_ItemType_WeaponBow,
-124691 : ItemCategories.RABInv_ItemType_Weapon1H,
-448817 : ItemCategories.RABInv_ItemType_Weapon2H,
-124692 : ItemCategories.RABInv_ItemType_Weapon1H,
-124694 : ItemCategories.RABInv_ItemType_Weapon1H,
-124689 : ItemCategories.RABInv_ItemType_Weapon1H,
-124690 : ItemCategories.RABInv_ItemType_Weapon1H,
-448816 : ItemCategories.RABInv_ItemType_Weapon2H,
-595943 : ItemCategories.RABInv_ItemType_WeaponArrow,
-
+// weapons	
+WeapTypeBattleaxe : ItemCategories.RABInv_ItemType_Weapon2H,
+WeapTypeBow : ItemCategories.RABInv_ItemType_WeaponBow,
+WeapTypeDagger : ItemCategories.RABInv_ItemType_Weapon1H,
+WeapTypeGreatsword: ItemCategories.RABInv_ItemType_Weapon2H,
+WeapTypeMace : ItemCategories.RABInv_ItemType_Weapon1H,
+WeapTypeStaff : ItemCategories.RABInv_ItemType_Weapon1H,
+WeapTypeSword : ItemCategories.RABInv_ItemType_Weapon1H,
+WeapTypeWarAxe : ItemCategories.RABInv_ItemType_Weapon1H,
+WeapTypeWarhammer : ItemCategories.RABInv_ItemType_Weapon2H,
+VendorItemArrow: ItemCategories.RABInv_ItemType_WeaponArrow,
+	
 // armors
-442605 : ItemCategories.RABInv_ItemType_ArmorBoots,
-441320 : ItemCategories.RABInv_ItemType_Clothes,
-442604 : ItemCategories.RABInv_ItemType_ArmorCuirass,
-442607 : ItemCategories.RABInv_ItemType_ArmorGauntlets,
-442606 : ItemCategories.RABInv_ItemType_ArmorHelmet,
-441321 : ItemCategories.RABInv_ItemType_Jewelry,
-615858 : ItemCategories.RABInv_ItemType_ArmorShield,
+ArmorBoots  : ItemCategories.RABInv_ItemType_ArmorBoots,
+ArmorClothing  : ItemCategories.RABInv_ItemType_Clothes,
+ArmorCuirass  : ItemCategories.RABInv_ItemType_ArmorCuirass,
+ArmorGauntlets : ItemCategories.RABInv_ItemType_ArmorGauntlets,
+ArmorHelmet  : ItemCategories.RABInv_ItemType_ArmorHelmet,
+ArmorJewelry  : ItemCategories.RABInv_ItemType_Jewelry,
+ArmorShield  : ItemCategories.RABInv_ItemType_ArmorShield,
 
-// Miscs
-595178 : ItemCategories.RABInv_ItemType_HidePelt,
-595179 : ItemCategories.RABInv_ItemType_Food,
-595177 : ItemCategories.RABInv_ItemType_MiscSmall,
-781527 : ItemCategories.RABInv_ItemType_MiscMedium,
-577002 : ItemCategories.RABInv_ItemType_Food,
-659030 : ItemCategories.RABInv_ItemType_Food,
-595181 : ItemCategories.RABInv_ItemType_Gem,
-577003 : ItemCategories.RABInv_ItemType_Ingredient,
-588122 : ItemCategories.RABInv_ItemType_Jewelry,
-595180 : ItemCategories.RABInv_ItemType_OreIngot,
-577005 : ItemCategories.RABInv_ItemType_Potion,
-577004 : ItemCategories.RABInv_ItemType_Potion,
-1006768 : ItemCategories.RABInv_ItemType_BookScroll,
-659031 : ItemCategories.RABInv_ItemType_BookScroll,
-604067 : ItemCategories.RABInv_ItemType_Soulgem,
-604069 : ItemCategories.RABInv_ItemType_BookScroll,
-604066 : ItemCategories.RABInv_ItemType_BookScroll,
-604068 : ItemCategories.RABInv_ItemType_Weapon1H,
-595182 : ItemCategories.RABInv_ItemType_MiscSmall,
+// Miscs	
+VendorItemAnimalHide: ItemCategories.RABInv_ItemType_HidePelt,
+VendorItemAnimalPart: ItemCategories.RABInv_ItemType_Food,
+VendorItemClutter : ItemCategories.RABInv_ItemType_MiscSmall,
+VendorItemFireword : ItemCategories.RABInv_ItemType_MiscMedium,
+VendorItemFood : ItemCategories.RABInv_ItemType_Food,
+VendorItemFoodRaw : ItemCategories.RABInv_ItemType_Food,
+VendorItemGem : ItemCategories.RABInv_ItemType_Gem,
+VendorItemIngredient: ItemCategories.RABInv_ItemType_Ingredient,
+VendorItemJewelry : ItemCategories.RABInv_ItemType_Jewelry,
+VendorItemOreIngot : ItemCategories.RABInv_ItemType_OreIngot,
+VendorItemPoison : ItemCategories.RABInv_ItemType_Potion,
+VendorItemPotion  : ItemCategories.RABInv_ItemType_Potion,
+VendorItemRecipe  : ItemCategories.RABInv_ItemType_BookScroll,
+VendorItemScroll : ItemCategories.RABInv_ItemType_BookScroll,
+VendorItemSoulGem : ItemCategories.RABInv_ItemType_Soulgem,
+VendorItemSpellTome : ItemCategories.RABInv_ItemType_BookScroll,
+VendorItemBook : ItemCategories.RABInv_ItemType_BookScroll,
+VendorItemStaff : ItemCategories.RABInv_ItemType_Weapon1H,
+VendorItemTool  : ItemCategories.RABInv_ItemType_MiscSmall,
 }
 
 function determineItemCategory(item: number){
@@ -261,9 +261,10 @@ function determineItemCategory(item: number){
 	for (let i = 0; i < kyds?.length; i++) {
 		const k = kyds[i];
 		const f: number = Form.from(k)!.getFormID()
-        if (Object.keys(keywordToCategory).includes(`${f}`)) {
+        const editorid: string = GetFormEditorID(Form.from(k))
+        if (Object.keys(keywordToCategory).includes(editorid)) {
             // @ts-ignore
-            key = keywordToCategory[f];
+            key = keywordToCategory[editorid];
             if (isEquipped){key += 1; if (key > 27){key = 0}}
 
             // log(`determineItemCategory:: the key is ${key}`)
@@ -273,11 +274,12 @@ function determineItemCategory(item: number){
         }
         else {continue}
 	}
-    if (key == -1){return 0;}
+    if (key == -1){return -1;}
 }
 
 function determineItemVolume(item: number): number{
     const category: number = determineItemCategory(item)
+    if (category === -1){return 0}
     const vol: number = Object.values(itemCategoryVolumes)[category]
     // log(`determineItemVolume:: the vol is ${vol}`)
     if (!vol){return 0}
@@ -433,13 +435,14 @@ function addItemtoSlot(item: number, num: number = 1, newSlot: Slot = undefined)
     let tuple = solveIncomingItemInfo(item)
     const vol: number = tuple[0] * num
     // log(`additemtoslot:: vol:: ${vol}`)
-    if (!newSlot){
-        slot = tuple[1]
-    }
-    else {
-        slot = newSlot
-    }
-    slot.items.push(item)
+    // if (!newSlot){
+    slot = tuple[1]
+    if (!slot){return;}
+    // }
+    // else {
+    //     slot = newSlot
+    // }
+    // slot.items.push(item)
     // log(slot.items)
     slot.currentSize += vol
     Slot.updateWidgets()
@@ -485,6 +488,7 @@ function slotLookatItem(item: number, num: number = 1) {
     let tuple = solveIncomingItemInfo(item)
     const vol: number = +( tuple[0] ).toFixed(2) * num
     const slot: Slot = tuple[1]
+    if (!slot){inventoryCurrentHighlighted.setText(`Volume: ${vol}\nSlot: None`); return;}
     let slotMax: number = slot.baseSize.toFixed(2)
     let slotCurrent: number = +( slot.currentSize ).toFixed(2)
     // log(`lotAtItem:: slot.baseSize = ${slot.baseSize}`)
@@ -600,6 +604,24 @@ function getHighlightedItemCount(){
 
 // _____________________________ JSON file functions __________________________________
 
+
+function checkFilesExist(){
+    if (!FileExists('data/skse/plugins/InventorySlots/Slots.json')){ WriteToFile('data/skse/plugins/InventorySlots/Slots.json',JSON.stringify({}) , true) }
+    if (!FileExists('data/skse/plugins/InventorySlots/Keywords.json')){ WriteToFile('data/skse/plugins/InventorySlots/Keywords.json', JSON.stringify({}), true) }
+    let file1: string = 'data/skse/plugins/InventorySlots/Keywords.json'
+    let file2: string = 'data/skse/plugins/InventorySlots/Slots.json'
+    let file_contents1: string = ReadFromFile(file1)
+    let file_contents2: string = ReadFromFile(file2)
+    if (file_contents1.length <= 2){ 
+        WriteToFile(file1, JSON.stringify({}), false);
+        saveKeywordCategoriesToDataFile()
+    }
+    if (file_contents2.length <= 2){ 
+        WriteToFile(file2, JSON.stringify({}), false);
+        saveToDataFile() 
+    }
+}
+
 export function saveToDataFile(){
     let data_json: string = 'data/skse/plugins/InventorySlots/Slots.json' 
     // Check if json file exists, and create one if otherwise
@@ -634,7 +656,60 @@ export function saveToDataFile(){
     WriteToFile(data_json, JSON.stringify(innerDict), false)
 }
 
-function importFile(){
+function saveKeywordCategoriesToDataFile(){
+    let data_json: string = 'data/skse/plugins/InventorySlots/Keywords.json' 
+
+    // Check if json file exists, and create one if otherwise
+    // if (!FileExists(data_json)){ WriteToFile(data_json, JSON.stringify({}), false) }
+    // let oldFile: string = ReadFromFile(data_json)
+
+    // If the file is empty, like after just being created or something, give it the initial {} 'squacket' things
+    // if (oldFile.length == 0){ WriteToFile(data_json, JSON.stringify({}), false); saveKeywordCategoriesToDataFile() }
+
+    // let keywords_categories =  JSON.parse(oldFile) 
+    let keywords_categories = {
+        keywords: {}
+    } 
+
+    let kwyds = Object.keys(keywordToCategory)
+    let cats = Object.values(keywordToCategory)
+    let names: string[] = []
+    let newDict = []
+    kwyds.forEach((k: string, i) => {
+        let n: string = `${ItemCategories[cats[i]]}`
+        // printConsole(k)
+        let t = {  }
+        t[k] = n
+        newDict.push(t)
+    });
+    // compatability file. Player can manipulate keyword list to add/remove support for certain items
+    keywords_categories['keywords'] = newDict
+
+    WriteToFile(data_json, JSON.stringify(keywords_categories), false)
+}
+
+function importKeywordsFile(){
+    let data_json: string = 'data/skse/plugins/InventorySlots/Keywords.json' 
+    let oldFile: string = ReadFromFile(data_json)
+    return JSON.parse(oldFile)
+}
+
+function importKeywordsFromFile(){
+    let kywds = importKeywordsFile()['keywords']
+    let newKeywordToCategory = []
+    kywds.forEach((k: {}, i: number) => {
+        let n = Object.keys(k)[0] 
+        let c = Object.values(k)[0]
+        let index: number = ItemCategories[c] 
+        // if (!Object.keys(keywordToCategory).includes(n)){ keywordToCategory[n] = index }
+        // else {keywordToCategory}
+        keywordToCategory[n] = index
+    })
+    // printConsole(keywordToCategory)
+    // keywordToCategory = newKeywordToCategory
+}
+
+function importSlotsFile(){
     let data_json: string = 'data/skse/plugins/InventorySlots/Slots.json' 
     if (!FileExists(data_json)){ WriteToFile(data_json, JSON.stringify({}), false) }
     let oldFile: string = ReadFromFile(data_json)
@@ -653,7 +728,7 @@ export function getSlotFromName(name: string): Slot | undefined{
 }
 
 function importSlotsfromFile(){
-    let slot_info = importFile()['slots']
+    let slot_info = importSlotsFile()['slots']
     let names = []
     slot_info.forEach(s => {
         let name: string = s['name']
@@ -691,7 +766,7 @@ function importSlotsfromFile(){
 }
 
 function importCategoriesfromFile(){
-    let cats_slots = importFile()['Category-to-Slots']
+    let cats_slots = importSlotsFile()['Category-to-Slots']
     cats_slots.forEach(cat_slot => {
         let cat: string = cat_slot[0]
         let slot_name: string = cat_slot[1]
@@ -702,7 +777,7 @@ function importCategoriesfromFile(){
 }
 
 function importCategoryVolumesfromFile(){
-    let vols = importFile()['volumes']
+    let vols = importSlotsFile()['volumes']
     let newVolumes: number[] = Object.values(vols)
     Object.keys(vols).forEach((v, i) => {
        let volume: number = newVolumes[i];
@@ -712,16 +787,18 @@ function importCategoryVolumesfromFile(){
 }
 
 function importInventoryWidgetPositionfromFile(){
-    let xy: number[] = importFile()['Current Item Widget Position']
+    let xy: number[] = importSlotsFile()['Current Item Widget Position']
     inventoryCurrentHighlighted.setPosition(xy[0], xy[1])
 }
 
 function importBaseWidgetPosfromFile(){
-    let xy: number[] = importFile()['Base Widget Position']
+    let xy: number[] = importSlotsFile()['Base Widget Position']
     setBaseWidgetPos(xy)
 }
 
 export function importDataFromFile(){
+    checkFilesExist()
+    importKeywordsFromFile()
     importCategoryVolumesfromFile()
     importCategoriesfromFile()
     importSlotsfromFile()
@@ -772,7 +849,7 @@ on('menuClose', (event) => {
 
 once('update', () => {
 
-    // log(Object.values(importFile()['volumes'])[ItemCategories.RABInv_ItemType_ArmorGauntlets])
+    // log(Object.values(importSlotsFile()['volumes'])[ItemCategories.RABInv_ItemType_ArmorGauntlets])
     // importSlotsfromFile()
     // saveToDataFile()
     if (FileExists('data/platform/plugins/InventorySlots.js') && FileExists('data/platform/pluginsdev/InventorySlots.js')){log('ABORT TESTING. THERE ARE TWO INSTANCES OF THIS SCRIPT')}
@@ -790,6 +867,7 @@ on('containerChanged', (event) => {
     const volume: number = info[0] 
     const fullVolume: number = volume * num
     const slot: Slot = info[1]
+    if (!slot){return;}
     if (event.oldContainer) {oldId = event.oldContainer.getFormID()}
     if (event.newContainer) {newId = event.newContainer.getFormID()}
     // if (ignoreContainerChangedEvent){ignoreContainerChangedEvent = false; return;}
