@@ -1,12 +1,10 @@
-import {on, once, hooks, printConsole, Game, Form, Debug, Key, PlayerPositionEventType } from  'skyrimPlatform';
+import {on, once, hooks, printConsole, Game, Form, Debug, Key  } from  'skyrimPlatform';
 import { FormListToArray, GetStringValue, SetFloatValue, SetIntValue, SetStringValue, StringListAdd, StringListClear, StringListCopy, StringListCount, StringListRemove, StringListToArray } from "@skyrim-platform/papyrus-util/StorageUtil";
 import * as mcm from "@skyrim-platform/mcm-helper/MCM"
 import { ModEvent } from "./modevent";
 import { getSlotFromName, ItemCategories,  Slot, saveToDataFile, importDataFromFile, categoryToSlot, itemCategoryVolumes, EvaluateInventory, inventoryCurrentHighlighted, setBaseWidgetPos, GetBaseWidgetPos } from "./InventorySlots";
 import { JsonExists } from '@skyrim-platform/papyrus-util/JsonUtil';
 import { WriteToFile } from '@skyrim-platform/papyrus-util/MiscUtil';
-
-
 //___________VARIABLES______________________________________
 
 let mcm_settings = { 

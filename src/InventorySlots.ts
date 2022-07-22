@@ -2,7 +2,7 @@ import { once, on, Form, Keyword, Game, Utility, printConsole, ObjectReference, 
 import { WriteToFile, ReadFromFile, FileExists } from "@skyrim-platform/papyrus-util/MiscUtil";
 import {ModEvent} from './modevent'
 import * as wt from '../../modules/SPTextUtils/spTextUtils'
-import {AddAllItemsToArray, IsPluginFound } from '../node_modules/@skyrim-platform/po3-papyrus-extender/PO3_SKSEFunctions'
+import {AddAllItemsToArray, IsPluginFound, GetFormEditorID, GetFormFromEditorID } from '../node_modules/@skyrim-platform/po3-papyrus-extender/PO3_SKSEFunctions'
 import { mainMcm } from "./Slots_Mcm";
 
 // script check
@@ -250,7 +250,6 @@ VendorItemStaff : ItemCategories.RABInv_ItemType_Weapon1H,
 VendorItemTool  : ItemCategories.RABInv_ItemType_MiscSmall,
 }
 
-import * as sp from 'skyrimPlatform'
 
 function determineItemCategory(item: number){
     const f: Form = Game.getFormEx(item)
@@ -263,7 +262,7 @@ function determineItemCategory(item: number){
 	for (let i = 0; i < kyds?.length; i++) {
 		const k = kyds[i];
 		const f: number = Form.from(k)!.getFormID()
-        const editorid: string = (sp as any).PO3_SKSEFunctions.GetFormEditorID(Game.getFormEx(f))
+        const editorid: string = GetFormEditorID(Game.getFormEx(f))
         if (Object.keys(keywordToCategory).includes(`${editorid}`)) {
             // @ts-ignore
             key = keywordToCategory[editorid];
@@ -344,6 +343,7 @@ export class Slot {
     static resetSlotCapacities(){
         this.getAllSlots().forEach(s => {
             s.currentSize = 0
+            s.items = []
         });
         this.updateWidgets()
     }
@@ -432,44 +432,40 @@ function solveIncomingItemInfo(item: number): [number, Slot] {
     return [determineItemVolume(item), determineItemsSlot(item)]
 }
 
-function addItemtoSlot(item: number, num: number = 1, newSlot: Slot = undefined){
+function addItemtoSlot(item: number, num: number = 1){
     let slot: Slot
     let tuple = solveIncomingItemInfo(item)
     const vol: number = tuple[0] * num
-    // log(`additemtoslot:: vol:: ${vol}`)
-    if (!newSlot){
-        slot = tuple[1]
-    }
-    else {
-        slot = newSlot
-    }
-    slot.items.push(item)
+    slot = tuple[1]
+    if (!slot){return;}
+    // slot.items.push(item)
     // log(slot.items)
     slot.currentSize += vol
     Slot.updateWidgets()
 }
 
-function removeItemfromSlot(item: number, num: number = 1, oldSlot: Slot = undefined){
+function removeItemfromSlot(item: number, num: number = 1){
     let slot: Slot
     let tuple = solveIncomingItemInfo(item)
     const vol: number = tuple[0] * num
     let stopFlag: boolean = false
     // if (!oldSlot){
-    //     slot = tuple[1]
+        slot = tuple[1]
+        // slot.items.splice(slot.items.find(item), 1)
     // }
     // else {
-        BaseSlots.forEach(s => {
-           if (s.items.includes(item)) {
-                slot = s; 
-                // log(slot.name); 
-                stopFlag = false; 
-                const i: number = slot.items.indexOf(item)
-                slot.items.splice(i,1)
-                slot.currentSize -= vol
-            }
-           else {stopFlag = true}
-        });
-        // if (stopFlag){return}
+    //     BaseSlots.forEach(s => {
+    //        if (s.items.includes(item)) {
+    //             slot = s; 
+    //             // log(slot.name); 
+    //             stopFlag = false; 
+    //             const i: number = slot.items.indexOf(item)
+    //             slot.items.splice(i,1)
+    //             slot.currentSize -= vol
+    //         }
+    //        else {stopFlag = true}
+    //     });
+    //     if (stopFlag){return}
         // else {slot.currentSize -= vol}
         // oldSlot.currentSize -= vol
     // }
@@ -489,7 +485,7 @@ function slotLookatItem(item: number, num: number = 1) {
     let tuple = solveIncomingItemInfo(item)
     const vol: number = +( tuple[0] ).toFixed(2) * num
     const slot: Slot = tuple[1]
-    let slotMax: number = slot.baseSize.toFixed(2)
+    let slotMax: number = +( slot.baseSize.toFixed(2) )
     let slotCurrent: number = +( slot.currentSize ).toFixed(2)
     // log(`lotAtItem:: slot.baseSize = ${slot.baseSize}`)
     Slot.updateWidgets()
@@ -514,7 +510,7 @@ const GetItemHighlighted = async (item: number) => {
     let vol: number = +( tuple[0] ).toFixed(2)
     const slot: Slot = tuple[1]
     if (!vol || !slot){return;}
-    let slotMax: number = slot.baseSize.toFixed(2)
+    let slotMax: number = +( slot.baseSize.toFixed(2) )
     let slotCurrent: number = +( slot.currentSize ).toFixed(2)
     // log(`GetItemHighlighted:: slot.baseSize = ${slot.baseSize}`)
     // log(`The selected item's slot is ${slot.name}`)
@@ -592,8 +588,12 @@ export function EvaluateInventory() {
     Slot.resetSlotCapacities()
     const allItems: Form[] = AddAllItemsToArray(pl(), false, false, true)
     allItems.forEach(f => {
-        addItemtoSlot(f.getFormID(), pl()?.getItemCount(f))
+        if (!f){return;}
+        let id: number = f.getFormID();
+        let count: number = pl()?.getItemCount(f)
+        addItemtoSlot(id, count)
     });
+
 }
 
 function getHighlightedItemCount(){
@@ -611,7 +611,6 @@ function checkFilesExist(){
     let file2: string = 'data/skse/plugins/InventorySlots/Slots.json'
     let file_contents1: string = ReadFromFile(file1)
     let file_contents2: string = ReadFromFile(file2)
-    printConsole(file_contents1.length)
     if (file_contents1.length <= 2){ 
         WriteToFile(file1, JSON.stringify({}), false);
         saveKeywordCategoriesToDataFile()
@@ -625,13 +624,14 @@ function checkFilesExist(){
 export function saveToDataFile(){
     let data_json: string = 'data/skse/plugins/InventorySlots/Slots.json' 
 
-    let innerDict = {
-        'volumes': {},
-        'Category-to-Slots': {},
-        'slots': {},
-        'Current Item Widget Position': {},
-        'Base Widget Position': {},
-    }
+    // let innerDict = {
+    //     'volumes': {},
+    //     'Category-to-Slots': {},
+    //     'slots': {},
+    //     'Current Item Widget Position': {},
+    //     'Base Widget Position': {},
+    // }
+    let innerDict = {}
     innerDict['volumes'] = itemCategoryVolumes
 
     let slotNames: string[][] = []
@@ -684,9 +684,9 @@ function saveKeywordCategoriesToDataFile(){
 
 function importDataFile(){
     let data_json: string = 'data/skse/plugins/InventorySlots/Slots.json' 
-    if (!FileExists(data_json)){ WriteToFile(data_json, JSON.stringify({}), false) }
+    // if (!FileExists(data_json)){ WriteToFile(data_json, JSON.stringify({}), false) }
     let oldFile: string = ReadFromFile(data_json)
-    if (oldFile.length == 0){ WriteToFile(data_json, JSON.stringify({}), false); saveToDataFile() }
+    // if (oldFile.length == 0){ WriteToFile(data_json, JSON.stringify({}), false); saveToDataFile() }
     else { return JSON.parse(oldFile)}
 }
 
@@ -749,6 +749,8 @@ function importSlotsfromFile(){
         new Slot(name, size, x, y)
     });
 
+    // Slot.getAllSlots().filter(n => n)
+
 }
 
 function importCategoriesfromFile(){
@@ -785,7 +787,7 @@ function importBaseWidgetPosfromFile(){
 
 export function importDataFromFile(){
     checkFilesExist()
-    // importKeywordandCategories()
+    importKeywordandCategories()
     importCategoryVolumesfromFile()
     importCategoriesfromFile()
     importSlotsfromFile()
@@ -839,150 +841,150 @@ once('update', () => {
     // importSlotsfromFile()
     // saveToDataFile()
     if (FileExists('data/platform/plugins/InventorySlots.js') && FileExists('data/platform/pluginsdev/InventorySlots.js')){log('ABORT TESTING. THERE ARE TWO INSTANCES OF THIS SCRIPT')}
-    // importDataFromFile()
-    checkFilesExist()
+    importDataFromFile()
+    // checkFilesExist()
     EvaluateInventory()
 });
 
-// on('containerChanged', (event) => {
-// 	let action: string = 'Picked Up'
-// 	var newId: number = -1
-// 	var oldId: number = -1
-// 	const itemId: number = event.baseObj.getFormID()
-// 	const num: number = event.numItems
-//     const info: [number, Slot] = solveIncomingItemInfo(event.baseObj.getFormID())
-//     const volume: number = info[0] 
-//     const fullVolume: number = volume * num
-//     const slot: Slot = info[1]
-//     if (event.oldContainer) {oldId = event.oldContainer.getFormID()}
-//     if (event.newContainer) {newId = event.newContainer.getFormID()}
-//     // if (ignoreContainerChangedEvent){ignoreContainerChangedEvent = false; return;}
-//     if (itemId === 15){return;}
+on('containerChanged', (event) => {
+	let action: string = 'Picked Up'
+	var newId: number = -1
+	var oldId: number = -1
+	const itemId: number = event.baseObj.getFormID()
+	const num: number = event.numItems
+    const info: [number, Slot] = solveIncomingItemInfo(event.baseObj.getFormID())
+    const volume: number = info[0] 
+    const fullVolume: number = volume * num
+    const slot: Slot = info[1]
+    if (event.oldContainer) {oldId = event.oldContainer.getFormID()}
+    if (event.newContainer) {newId = event.newContainer.getFormID()}
+    // if (ignoreContainerChangedEvent){ignoreContainerChangedEvent = false; return;}
+    if (itemId === 15){return;}
 
-//     // log(`oldcontainer == ${ event.oldContainer.getFormID() }`)
-//     // log(`newcontainer == ${ event.newContainer.getFormID() }`)
+    // log(`oldcontainer == ${ event.oldContainer.getFormID() }`)
+    // log(`newcontainer == ${ event.newContainer.getFormID() }`)
 
 
-//     log(`containerChanged Running::`)
-//     log(`containerChanged Running:: IgnoreFlag:: ${ignoreContainerChangedEvent}`)
-//     // Item added to player's inventory
-//     // ignore gold coming in and out
-//     if (newId == 20 && !ignoreContainerChangedEvent && itemId != 15){
-//         log(`newId == 20::`)
+    log(`containerChanged Running::`)
+    log(`containerChanged Running:: IgnoreFlag:: ${ignoreContainerChangedEvent}`)
+    // Item added to player's inventory
+    // ignore gold coming in and out
+    if (newId == 20 && !ignoreContainerChangedEvent && itemId != 15){
+        log(`newId == 20::`)
 
-//         // check how many are in an item stack and if any are allowed to be picked up
-//         let allowedCount: number = (slot.baseSize - slot.currentSize) / volume 
-//         if (allowedCount > num){allowedCount = num}
-//         if (volume <= 0){allowedCount = num}
-//         let disallowedCount: number = num - allowedCount
+        // check how many are in an item stack and if any are allowed to be picked up
+        let allowedCount: number = (slot.baseSize - slot.currentSize) / volume 
+        if (allowedCount > num){allowedCount = num}
+        if (volume <= 0){allowedCount = num}
+        let disallowedCount: number = num - allowedCount
 
-//         // if it is not a stack of items
-//         if (num === 1){ 
-//             log(`num === 1::`)
-//             // the slot is filled
-//             if (slot.currentSize + fullVolume > slot.baseSize ) {
-//                 log(`Slot might be filled`)
+        // if it is not a stack of items
+        if (num === 1){ 
+            log(`num === 1::`)
+            // the slot is filled
+            if (slot.currentSize + fullVolume > slot.baseSize ) {
+                log(`Slot might be filled`)
 
-//                 // if the item was picked up from the world
-//                 if (!event.oldContainer){
-//                     DropItem(itemId, num)
-//                     log('!event.oldContainer:: ')
-//                 }
+                // if the item was picked up from the world
+                if (!event.oldContainer){
+                    DropItem(itemId, num)
+                    log('!event.oldContainer:: ')
+                }
 
-//                 // if the item was taken from a container
-//                 else {
-//                     log('allowedcount === 1:: Trying to deny selection')
-//                     if (Ui.isMenuOpen('BarterMenu')){
-//                         DropItem(itemId, num)
-//                     }
-//                     else{
-//                         // Flat out prevent taking the item
-//                         DenySelection(itemId, disallowedCount,event.oldContainer, slot.name)
-//                     }
-//                     log('event.oldContainer')
-//                 }
-//                 // ignoreContainerChangedEvent = true 
+                // if the item was taken from a container
+                else {
+                    log('allowedcount === 1:: Trying to deny selection')
+                    if (Ui.isMenuOpen('BarterMenu')){
+                        DropItem(itemId, num)
+                    }
+                    else{
+                        // Flat out prevent taking the item
+                        DenySelection(itemId, disallowedCount,event.oldContainer, slot.name)
+                    }
+                    log('event.oldContainer')
+                }
+                // ignoreContainerChangedEvent = true 
                 
-//             }
-//             else {
-//                 log(`num === 1:: additemtoslot`)
-//                 addItemtoSlot(itemId, num)
-//             }
-//         }
-//         // if it is a stack of items
-//         else if (num > 1){
-//             log(`\nnum > 1:: allowedcount:: ${allowedCount}\ndisallowedcount:: ${disallowedCount}\nvolume * num = ${volume} * ${allowedCount}`)
-//             addItemtoSlot(itemId, allowedCount);
-//             // removeItemfromSlot(itemId, disallowedCount)
-//             // if the item was picked up from the world
-//             if (slot.currentSize + (volume * allowedCount) >= slot.baseSize ){ 
+            }
+            else {
+                log(`num === 1:: additemtoslot`)
+                addItemtoSlot(itemId, num)
+            }
+        }
+        // if it is a stack of items
+        else if (num > 1){
+            log(`\nnum > 1:: allowedcount:: ${allowedCount}\ndisallowedcount:: ${disallowedCount}\nvolume * num = ${volume} * ${allowedCount}`)
+            addItemtoSlot(itemId, allowedCount);
+            // removeItemfromSlot(itemId, disallowedCount)
+            // if the item was picked up from the world
+            if (slot.currentSize + (volume * allowedCount) >= slot.baseSize ){ 
 
-//                 if (!event.oldContainer && disallowedCount > 0){
-//                     DropItem(itemId, disallowedCount)
-//                     log('!event.oldContainer:: disallowed count > 0::')
-//                 }
+                if (!event.oldContainer && disallowedCount > 0){
+                    DropItem(itemId, disallowedCount)
+                    log('!event.oldContainer:: disallowed count > 0::')
+                }
 
-//                 // if the item was taken from a container
-//                 else if (disallowedCount){
-//                     // Check if it's possible to allow a few through, like arrows
-//                     // Flat out prevent taking the item
-//                     if (Ui.isMenuOpen('BarterMenu')){
-//                         log('allowedCount > 1:: trying to drop item')
-//                         DropItem(itemId, disallowedCount)
-//                     }
-//                     else{
-//                         log('allowedCount > 1:: Trying to deny selection')
-//                         DenySelection(itemId, disallowedCount, event.oldContainer, slot.name)
-//                     }
-//                     log('event.oldContainer')
-//                 }
-//                 // ignoreContainerChangedEvent = true 
-//                 log(`allowedCount > 1:: IgnoreFlag:: ${ignoreContainerChangedEvent}`)
+                // if the item was taken from a container
+                else if (disallowedCount){
+                    // Check if it's possible to allow a few through, like arrows
+                    // Flat out prevent taking the item
+                    if (Ui.isMenuOpen('BarterMenu')){
+                        log('allowedCount > 1:: trying to drop item')
+                        DropItem(itemId, disallowedCount)
+                    }
+                    else{
+                        log('allowedCount > 1:: Trying to deny selection')
+                        DenySelection(itemId, disallowedCount, event.oldContainer, slot.name)
+                    }
+                    log('event.oldContainer')
+                }
+                // ignoreContainerChangedEvent = true 
+                log(`allowedCount > 1:: IgnoreFlag:: ${ignoreContainerChangedEvent}`)
 
-//             }
-//         }
-//     }
-//     // Item removed from player's inventory
-//     else if (oldId == 20 && !ignoreContainerChangedEvent && itemId != 15) {
-//         log(`Remove:: IgnoreFlag:: ${ignoreContainerChangedEvent}`)
-//         log(`Removing ${itemId} with count ${num}`)
-//         removeItemfromSlot(itemId, num)
-//     }
-//     else {ignoreContainerChangedEvent = false}
-//     if (slot.currentSize <= 0) {slot.currentSize = 0}
-// });
+            }
+        }
+    }
+    // Item removed from player's inventory
+    else if (oldId == 20 && !ignoreContainerChangedEvent && itemId != 15) {
+        log(`Remove:: IgnoreFlag:: ${ignoreContainerChangedEvent}`)
+        log(`Removing ${itemId} with count ${num}`)
+        removeItemfromSlot(itemId, num)
+    }
+    else {ignoreContainerChangedEvent = false}
+    if (slot.currentSize <= 0) {slot.currentSize = 0}
+});
 
-// let isFadein: boolean = false
-// on('crosshairRefChanged', (event) => {
-//     const id: number = event.reference?.getBaseObject()?.getFormID()
-//     const typeBlacklist: number[] = [FormType.Character, FormType.Activator, FormType.Door, FormType.Apparatus, FormType.Container, FormType.NPC, FormType.Flora, FormType.Tree]
-//     if (event.reference?.getBaseObject()?.isPlayable() && !typeBlacklist.includes(event.reference?.getBaseObject()?.getType())){
-//             inventoryCurrentHighlighted.setAlpha(1)
-//             isFadein = true
-//             Slot.updateWidgets()
-//             Slot.fadeAllIn()
-//             slotLookatItem(id)
-//     }
-//     else {isFadein = false; waitFadeOut()}
-// });
+let isFadein: boolean = false
+on('crosshairRefChanged', (event) => {
+    const id: number = event.reference?.getBaseObject()?.getFormID()
+    const typeBlacklist: number[] = [FormType.Character, FormType.Activator, FormType.Door, FormType.Apparatus, FormType.Container, FormType.NPC, FormType.Flora, FormType.Tree]
+    if (event.reference?.getBaseObject()?.isPlayable() && !typeBlacklist.includes(event.reference?.getBaseObject()?.getType())){
+            inventoryCurrentHighlighted.setAlpha(1)
+            isFadein = true
+            Slot.updateWidgets()
+            Slot.fadeAllIn()
+            slotLookatItem(id)
+    }
+    else {isFadein = false; waitFadeOut()}
+});
 
-// on('equip', (event) => {
-//     if (event.actor.getBaseObject()?.getFormID() != pl()?.getBaseObject()?.getFormID()){return;}
-//     // log(event.baseObj.getName())
-//     if (Ui.isMenuOpen('MagicMenu')) {return;}
-//     const item: number = event.baseObj.getFormID()
-//     // log(`equip:: isEquipped:: ${pl()?.isEquipped(event.baseObj)}`)
-//     const oldCat: Slot = determineItemCategory(item)
-//     removeItemfromSlot(item, 1)
-//     addItemtoSlot(item, 1)
-// });
+on('equip', (event) => {
+    if (event.actor.getBaseObject()?.getFormID() != pl()?.getBaseObject()?.getFormID()){return;}
+    // log(event.baseObj.getName())
+    if (Ui.isMenuOpen('MagicMenu')) {return;}
+    const item: number = event.baseObj.getFormID()
+    // log(`equip:: isEquipped:: ${pl()?.isEquipped(event.baseObj)}`)
+    const oldCat: Slot = determineItemCategory(item)
+    removeItemfromSlot(item, 1)
+    addItemtoSlot(item, 1)
+});
 
-// on('unequip', (event) => {
-//     if (event.actor.getBaseObject()?.getFormID() != pl()?.getBaseObject()?.getFormID()){return;}
-//     // log(event.baseObj.getName())
-//     if (Ui.isMenuOpen('MagicMenu')) {return;}
-//     const item: number = event.baseObj.getFormID()
-//     // log(`unequip:: isEquipped:: ${pl()?.isEquipped(event.baseObj)}`)
-//     removeItemfromSlot(item, 1)
-//     addItemtoSlot(item, 1)
-// });
+on('unequip', (event) => {
+    if (event.actor.getBaseObject()?.getFormID() != pl()?.getBaseObject()?.getFormID()){return;}
+    // log(event.baseObj.getName())
+    if (Ui.isMenuOpen('MagicMenu')) {return;}
+    const item: number = event.baseObj.getFormID()
+    // log(`unequip:: isEquipped:: ${pl()?.isEquipped(event.baseObj)}`)
+    removeItemfromSlot(item, 1)
+    addItemtoSlot(item, 1)
+});
