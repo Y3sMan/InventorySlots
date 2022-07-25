@@ -28,9 +28,13 @@ browser.setVisible(true)
 let widget_x: number = 1500
 let widget_y: number = 800
 const white: number[] = [1,1,1,1]
-destroyAllTexts()
-// wt.spText.destroyAllModTexts(modname)
-export const inventoryCurrentHighlighted: wt.spText = new wt.spText(950, widget_y, 'currentItem', [1,1,1,0], undefined, modname)
+// wt.spText.destroyAllTexts()
+// destroyAllTexts()
+
+wt.spText.destroyAllModTexts(modname)
+
+// export const inventoryCurrentHighlighted: wt.spText = new wt.spText(950, widget_y, 'currentItem', [1,1,1,0], undefined, modname)
+// let debugMsg: wt.spText = new wt.spText(100, 100, 'Debug Log', white, undefined, 'ym_debug')
 
 // ____________________FUNCTIONS___________________________________________
 
@@ -295,18 +299,52 @@ function determineItemVolume(item: number): number{
     return vol
 }
 
+// new class of text widgets that automatically comes with a second widget to act as a black outline for the primary widget
+class Text extends wt.spText {
+    widget_outline: wt.spText
+    constructor(xPos: number, yPos: number, text: string, col: number[], sType?: string, sModName?: string){
+        super(xPos + 2, yPos + 2, text, [1,1,1,0], sType, modname)
+        this.widget_outline = new wt.spText(xPos + 2, yPos + 2, text, [0,0,0,0], sType, modname)
+        this.destroyText()
+        super(xPos, yPos, text, col, sType , sModName )
+        
+    }
+
+    setText(txt: string): void {
+        setTextString(this.index, txt);
+        setTextString(this.widget_outline.index, txt)
+    }
+
+    setAlpha(alpha: number): void{
+        let color: number[] = this.getColor();
+        setTextColor(this.index, [color[0], color[1], color[2], alpha])
+        setTextColor(this.widget_outline.index, [0, 0, 0, alpha])
+    }
+
+    setOwningMod(mod: string): void {
+        this.owningMod = mod;
+        this.widget_outline.owningMod = mod;
+    }
+
+    setPosition(xPos: number, yPos: number): void {
+        setTextPos(this.index, xPos, yPos);
+        setTextPos(this.widget_outline.index, xPos + 2, yPos + 2);
+    }
+}
+
+
 let BaseSlots: Slot[] = []
 export class Slot {
     name: string
     baseSize: number
     currentSize: number
-    widget: wt.spText
+    widget: Text
     items: number[]
     constructor(name: string, maxSize: number, x: number, y: number) {
         this.name = name
         this.baseSize = maxSize            
         this.currentSize = 0
-        this.widget = new wt.spText(x,y, this.name, white, undefined, modname)
+        this.widget = new Text(x,y, this.name, [1,1,1,0], undefined, modname)
         this.items = []
         BaseSlots.push(this)
     }
@@ -364,12 +402,14 @@ export class Slot {
         let x: number = newPos[0]
         let y: number = newPos[1]
         this.getAllSlots().forEach(s => {
-           let w: wt.spText = s.widget 
+           let w: Text = s.widget 
            w.setPosition(x, y)
            y += 20
         });
     }
 }
+
+export const inventoryCurrentHighlighted: Text = new Text(950, widget_y, 'currentItem', [1,1,1,0], undefined, modname)
 
 let Misc_slot = new Slot('Misc',200, widget_x, widget_y)
 let WeaponSheaths_slot = new Slot('Weapons',20, widget_x, widget_y + 20)
