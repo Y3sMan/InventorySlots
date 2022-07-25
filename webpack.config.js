@@ -29,7 +29,8 @@ if (process.env['DEPLOY_PLUGIN']?.includes('true')) {
     // Get the path to the Skyrim folder from skyrim.json and the SKYRIMPATH environment variable, if configured.
     let skyrimConfig
     if (fs.existsSync('./skyrim.json')) skyrimConfig = require('./skyrim.json')
-    const skyrimPathFromConfig = skyrimConfig && skyrimConfig.skyrimFolder
+    // const skyrimPathFromConfig = skyrimConfig && skyrimConfig.skyrimFolder
+    const skyrimPathFromConfig = skyrimConfig && skyrimConfig.enderalFolder
     const skyrimPathFromEnvironment = process.env['SKYRIMPATH']
 
     // If the path set in skyrim.json exists on the file system, use it.
