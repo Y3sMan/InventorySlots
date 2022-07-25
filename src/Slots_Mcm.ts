@@ -2,7 +2,7 @@ import {on, once, hooks, printConsole, Game, Form, Debug, Key, PlayerPositionEve
 import { FormListToArray, GetStringValue, SetFloatValue, SetIntValue, SetStringValue, StringListAdd, StringListClear, StringListCopy, StringListCount, StringListRemove, StringListToArray } from "@skyrim-platform/papyrus-util/StorageUtil";
 import * as mcm from "@skyrim-platform/mcm-helper/MCM"
 import { ModEvent } from "./modevent";
-import { getSlotFromName, ItemCategories,  Slot, saveToDataFile, importDataFromFile, categoryToSlot, itemCategoryVolumes, EvaluateInventory, inventoryCurrentHighlighted, setBaseWidgetPos, GetBaseWidgetPos, Misc_slot } from "./InventorySlots";
+import { getSlotFromName, ItemCategories,  Slot, saveToDataFile, importDataFromFile, categoryToSlot, itemCategoryVolumes, EvaluateInventory, inventoryCurrentHighlighted, setBaseWidgetPos, GetBaseWidgetPos } from "./InventorySlots";
 import { JsonExists } from '@skyrim-platform/papyrus-util/JsonUtil';
 import { WriteToFile } from '@skyrim-platform/papyrus-util/MiscUtil';
 
@@ -72,7 +72,7 @@ export const saveSettings = function () {
 }
 
 function FillMCMOptions () {
-	FilterMCMOptions('')	
+	// FilterMCMOptions('')	
 
     let lists: string[] = [ mcm_settings.SelectedSlot, storageKeys.menuBlackList, storageKeys.menuWhiteList ]
 
