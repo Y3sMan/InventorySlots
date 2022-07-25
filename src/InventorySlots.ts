@@ -45,6 +45,15 @@ export function log(msg: string){
     }
 }
 
+let text_debug_log: boolean = false 
+export function textLog(msg: string | number){
+    msg = msg as string
+    if (text_debug_log){
+        printConsole(msg)
+        debugMsg.setText(msg)
+    }
+}
+
 export function pl() { return Game.getPlayer(); }
 
 export function GetBaseWidgetPos(){
@@ -726,17 +735,22 @@ function importKeywordsFile(){
 
 function importKeywordsFromFile(){
     let kywds = importKeywordsFile()['keywords']
-    let newKeywordToCategory = []
+    let newKeywordToCategory = keywordToCategory
+    // clear out old dictionary
+    for (var prop in keywordToCategory) {
+        if (keywordToCategory.hasOwnProperty(prop)) {
+            delete keywordToCategory[prop];
+        }
+    }
+    // replace it with the keywords.json 
+    // nothing can go wrong with this ever right?
     kywds.forEach((k: {}, i: number) => {
         let n = Object.keys(k)[0] 
         let c = Object.values(k)[0]
         let index: number = ItemCategories[c] 
-        // if (!Object.keys(keywordToCategory).includes(n)){ keywordToCategory[n] = index }
-        // else {keywordToCategory}
         keywordToCategory[n] = index
     })
-    // printConsole(keywordToCategory)
-    // keywordToCategory = newKeywordToCategory
+    keywordToCategory = newKeywordToCategory
 }
 
 function importSlotsFile(){
